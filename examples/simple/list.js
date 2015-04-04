@@ -1,7 +1,8 @@
-var list = new InfiniteList().setConfig({
+
+var list = new InfiniteList({
     itemHeightGetter: function(){ return 50;},
     itemRenderer: function(index, domElement){
         domElement.innerHTML = 'Item ' + index;
     },
-    rowsCount: 100
+    itemsCount: 200
 }).attach(document.getElementById('main'));

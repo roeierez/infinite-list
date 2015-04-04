@@ -19,29 +19,25 @@
             }
         }
 
-    var Layer = function (listConfig) {
+    var Layer = function (parentElement) {
         var listItemElement = null,
             identifier = "",
             itemIndex = -1;
 
-        function attach(index, topOffset, parentElement, layerWidth) {
+        listItemElement = createListItemWrapperElement();
+        parentElement.appendChild(listItemElement);
+
+        function attach(index, topOffset, renderer, width, height, itemIdentifier) {
             itemIndex = index;
-            if (listItemElement == null) {
-                listItemElement = createListItemWrapperElement();
-                parentElement.appendChild(listItemElement);
-            }
 
             Helpers.applyElementStyle(listItemElement, {
-                width: layerWidth + 'px',
-                height: (listConfig.itemHeightGetter && listConfig.itemHeightGetter(itemIndex) || DEFAULT_ITEM_HEIGHT) + 'px',
+                width: width + 'px',
+                height: (height || DEFAULT_ITEM_HEIGHT) + 'px',
                 webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)'
             });
 
-            listConfig.itemRenderer(itemIndex, listItemElement);
-            if (listConfig.itemIdentifierGetter) {
-                identifier = listConfig.itemIdentifierGetter(itemIndex);
-            }
-
+            renderer(itemIndex, listItemElement);
+            identifier = itemIdentifier;
             return this;
         }
 
@@ -78,12 +74,15 @@
     var LayersPool = function () {
         var layersByIdentifier = {};
 
-        function addLayer(layer) {
+        function addLayer(layer, hide) {
             var layerIdentifier = layer.getIdentifier();
             if (layersByIdentifier[layerIdentifier] == null) {
                 layersByIdentifier[layerIdentifier] = [];
             }
             layersByIdentifier[layerIdentifier].push(layer);
+            if (hide){
+                Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+            }
         }
 
         function borrowLayerWithIdentifier(identifier) {
@@ -139,16 +138,20 @@
         }
     }
 
-    var InfiniteList = function () {
+    var InfiniteList = function (listConfig) {
 
         var config = {
                 itemHeightGetter: null,
                 itemRenderer: null,
-                itemIdentifierGetter: null,
+                itemTypeGetter: null,
                 pageFetcher: null,
-                loadMoreHTML: 'Load More...',
-                rowsCount: 0
+                loadMoreRenderer: function(index, domElement){
+                    domElement.innerHTML = 'Loading...';
+                },
+                hasMore: false,
+                itemsCount: 0
             },
+            parentElement = null,
             rootElement = null,
             scrollElement = null,
             scrollbar = null,
@@ -160,16 +163,18 @@
             touchConnector = null,
             topOffset = 0;
 
-        function setConfig(listConfig) {
-            config = listConfig;
-            return this;
+        for (key in listConfig){
+            if (listConfig.hasOwnProperty(key)){
+                config[key] = listConfig[key];
+            }
         }
 
-        function attach(domElement, touchProvider) {
-            calculateHeights();
+        function attach(domElement, touchProvider){
+            parentElement = domElement;
             initializeRootElement(domElement);
             initializeScroller(domElement, touchProvider);
             window.addEventListener('resize', refresh.bind(this));
+            refresh();
             return this;
         }
 
@@ -177,12 +182,13 @@
             if (touchConnector){
                 touchConnector.disconnect();
             }
+            parentElement.removeChild(rootElement);
             window.removeEventListener('resize', refresh.bind(this));
         }
 
         function calculateHeights() {
             accumulatedRowHeights = [0];
-            for (var i = 1; i < config.rowsCount || 0; ++i) {
+            for (var i = 1; i <= config.itemsCount || 0; ++i) {
                 var currentRowHeight = config.itemHeightGetter ? config.itemHeightGetter(i - 1) : DEFAULT_ITEM_HEIGHT;
                 accumulatedRowHeights[i] = accumulatedRowHeights[i - 1] + currentRowHeight;
             }
@@ -196,7 +202,7 @@
                 by the scroller
              3. scrollbar - the vertical scrollbar. The scrollbar is rendered because I don't use the native scroller here.
          */
-        function initializeRootElement(domElement) {
+        function initializeRootElement(parentElement) {
             scrollElement = document.createElement('div');
             Helpers.applyElementStyle(scrollElement, {
                 position: 'absolute',
@@ -207,8 +213,8 @@
             rootElement = document.createElement('div');
             Helpers.applyElementStyle(rootElement, {
                 position: 'relative',
-                height: domElement.clientHeight + 'px',
-                width: domElement.clientWidth + 'px',
+                height: parentElement.clientHeight + 'px',
+                width: parentElement.clientWidth + 'px',
                 overflow: 'hidden'
             });
             rootElement.appendChild(scrollElement);
@@ -224,7 +230,7 @@
                 backgroundColor: "#333"
             });
             rootElement.appendChild(scrollbar);
-            domElement.appendChild(
+            parentElement.appendChild(
                 rootElement);
         };
 
@@ -234,30 +240,35 @@
          callback with the scrolling position when changed.
          I have used ZyngaScroller for that: https://github.com/zynga/scroller
          */
-        function initializeScroller(domElement, touchProvider) {
+        function initializeScroller(parentElement, touchProvider) {
 
             scroller = new Scroller(function (left, top) {
                 topOffset = top || 0;
                 render();
             });
 
-            visibleHeight = domElement.clientHeight;
-            scroller.setDimensions(
-                domElement.clientWidth,
-                domElement.clientHeight,
-                domElement.clientWidth,
-                accumulatedRowHeights[accumulatedRowHeights.length - 1] + (config.itemHeightGetter ? config.itemHeightGetter([accumulatedRowHeights.length - 1]) : DEFAULT_ITEM_HEIGHT )
-            );
-
-            touchConnector = new TouchToScrollerConnector(touchProvider || domElement, scroller);
+            visibleHeight = parentElement.clientHeight;
+            touchConnector = new TouchToScrollerConnector(touchProvider || parentElement, scroller);
             touchConnector.connect();
+        }
+
+        function updateScrollerDimentions(parentElement){
+
+            scroller.setDimensions(
+                parentElement.clientWidth,
+                parentElement.clientHeight,
+                parentElement.clientWidth,
+                getListHeight()
+            );
         }
 
         function refresh(){
             renderedListItems.forEach(function(layer){
-                layersPool.addLayer(layer)
+                layersPool.addLayer(layer, true)
             });
             renderedListItems = [];
+            calculateHeights();
+            updateScrollerDimentions(parentElement);
             requestAnimationFrame(function(){
                 render();
             });
@@ -274,6 +285,9 @@
             var topVisibleIndex = getFirstVisibleItemAtHeight(topOffset),
                 bottomVisibleIndex = getFirstVisibleItemAtHeight(topOffset + visibleHeight);
 
+            if (!config.hasMore){
+                bottomVisibleIndex = Math.min(bottomVisibleIndex, config.itemsCount - 1);
+            }
             //remove non-visible layers from top and push them to layerPool
             while (renderedListItems.length > 0 && renderedListItems[0].getItemIndex() < topVisibleIndex) {
                 layersPool.addLayer(renderedListItems.shift());
@@ -294,8 +308,12 @@
             renderedListItems = topItems.concat(renderedListItems);
 
             //fill the gaps on bottom
-            for (var i = renderedListItems[renderedListItems.length - 1].getItemIndex() + 1; i <= bottomVisibleIndex; ++i) {
+            for (var i = renderedListItems[renderedListItems.length - 1].getItemIndex() + 1; i <= Math.min(config.itemsCount - 1, bottomVisibleIndex); ++i) {
                 pushLayerAtIndex(i, renderedListItems);
+            }
+
+            if (bottomVisibleIndex > config.itemsCount - 1){
+                renderLoadMore();
             }
 
             updateScrollbar();
@@ -306,7 +324,7 @@
          Update the scrollbar size and position.
          */
         function updateScrollbar() {
-            var listHeight = accumulatedRowHeights[accumulatedRowHeights.length - 1] + (config.itemHeightGetter ? config.itemHeightGetter([accumulatedRowHeights.length - 1]) : DEFAULT_ITEM_HEIGHT ),
+            var listHeight = getListHeight(),
                 attachedElement = rootElement.parentElement,
                 scrollbarHeight = Math.max(10, Math.floor(attachedElement.clientHeight / listHeight * attachedElement.clientHeight)),
                 scrollbarPos = Math.floor(topOffset / (listHeight - attachedElement.clientHeight) * (attachedElement.clientHeight - scrollbarHeight)),
@@ -318,22 +336,40 @@
             });
         }
 
+        function getListHeight(){
+            return accumulatedRowHeights[accumulatedRowHeights.length - 1] + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT);
+        }
+
         /*
          Borrow a layer from the LayersPool and attach it to a certain item at index.
          */
-        function pushLayerAtIndex(index, listItems) {
-            var layerIdentifier = config.itemIdentifierGetter ? config.itemIdentifierGetter(index) : '';
+        function pushLayerAtIndex(index, listItems, identifier, height, renderer) {
+            var layerIdentifier = identifier || (config.itemTypeGetter ? config.itemTypeGetter(index) : '');
             var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
             if (layer == null) {
-                layer = new Layer(config);
+                layer = new Layer(scrollElement);
             }
-            layer.attach(index, accumulatedRowHeights[index], scrollElement, rootElement.clientWidth - 9);
+            //index, topOffset, renderer, width, height, itemIdentifier
+            var itemHeight = height || config.itemHeightGetter && config.itemHeightGetter(index);
+            layer.attach(index, accumulatedRowHeights[index], renderer || config.itemRenderer, rootElement.clientWidth - 9, itemHeight, layerIdentifier);
             listItems.push(layer);
+        }
+
+        function renderLoadMore(){
+            if (renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
+                pushLayerAtIndex(config.itemsCount, renderedListItems, '$LoadMore', -1, config.loadMoreRenderer);
+                config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
+                    config.hasMore = hasMore;
+                    config.itemsCount += pageItemsCount;
+                    refresh();
+                });
+            }
         }
 
         function getFirstVisibleItemAtHeight(top) {
             var i = 0;
-            while (i < accumulatedRowHeights.length && accumulatedRowHeights[i + 1] < top) {
+
+            while (i < config.itemsCount && accumulatedRowHeights[i + 1] < top) {
                 i++;
             }
             return i;
@@ -349,7 +385,7 @@
 
         return {
             attach: attach,
-            setConfig: setConfig,
+            detach: detach,
             scrollToItem: scrollToItem,
             scrollToOffset: scrollToOffset,
             refresh: refresh

@@ -4,44 +4,36 @@ var listData = [],
         return '<div>' + html + '</div>';
     };
 
-for (var i=0; i<1000; ++i){
-    var identifier = i % 2; //generating two differen item types
-
-    if (identifier == 0){
-        listData[i] = {height: 40, header: 'Header of item #' + i, identifier: identifier}
-    } else {
-        listData[i] = {height: 60, description: 'Text of item #' + i, header: 'Header of item #' + i, identifier: identifier}
-    }
-}
-
-var list = new InfiniteList().setConfig({
+var list = new InfiniteList({
 
     itemHeightGetter: function(index){
-        return listData[index].height;
+        return index % 2 == 0 ? 40 : 60;
     },
 
-    itemIdentifierGetter: function(index){
+    itemTypeGetter: function(index){
         return index % 2;
     },
 
     itemRenderer: function(index, domElement){
-        var identifier = index %2;
-        //we are constructing a new item
-        if (!domElement.hasChildNodes()){
-            var headerHTML = wrapInDiv(listData[index].header),
-                descriptionHTML = (identifier == 0) ? '' :  wrapInDiv(listData[index].description);
+        var itemType = index % 2,
+            header = 'Header of item #' + index,
+            description = 'Description of item #' + index;
+
+        if (!domElement.hasChildNodes()){  //we are constructing a new item
+            var headerHTML = wrapInDiv(header),
+                descriptionHTML = (itemType == 0) ? '' :  wrapInDiv(description);
 
             domElement.innerHTML = headerHTML + descriptionHTML;
 
-        } else { //we are updating
-            domElement.childNodes[0].innerText = listData[index].header;
-            if (identifier == 1){
-                domElement.childNodes[1].innerText = listData[index].description;
+        } else { //we are recycling
+            domElement.childNodes[0].innerText = header;
+            if (itemType == 1){
+                domElement.childNodes[1].innerText = description;
             }
         }
     },
 
-    rowsCount: listData.length
+    itemsCount: 100
 
 }).attach(document.getElementById('main'));
 
