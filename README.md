@@ -60,6 +60,9 @@ config has the following properties:
 #### itemsCount [Number]
 The number of items in the list
 
+#### hasMore [Boolean]
+True if we have more items to load (paging)
+
 #### Function itemRenderer(domElement, index) 
 The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.
 
@@ -70,8 +73,8 @@ Returns the height of an item by index
 Returns the type of an item by its index. This type is used as the key for recycling elements which means that items with the same type might share the same domElement (if they are not visible together at the same time).
 
 #### Function Bool pageFetcher(fromIndex, callback)
-This method will be invoked when the list is scrolled to the end.
-If the method returns false, nothing happens. If it returns true then the list will render "Loading...' component and wait for the call back to return.
+This method will be invoked when the list is scrolled to the end and 'hasMore' value is true.
+The list will render "Loading...' component and wait for the call back to return.
 The user should feed the callback with two paramters:
 * pageItemsCount - the number of items loaded in this page
 * hasMore - Are there more items to be loaded or this is the last page of the list.
