@@ -81,11 +81,11 @@ The user should feed the callback with two paramters:
 
 ### scrollToOffset(offset, animate)
 
-A function that receive the offset to scroll and scroll the list to that position
+A function that receive the offset to scroll and scroll the list to that position with/without animation
 
-### scrollToItemAtIndex(index)
+### scrollToItem(index, animate)
 
-A function that receive the index of item and scroll the list to that item position
+A function that receive the index of item and scroll the list to that item position with/without animation
 
 ### refresh()
 
