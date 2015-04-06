@@ -35,11 +35,8 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 ## Installation
 
 ### In the Browser
-I am using zynga-scroller for the scroller implementation so you need to add the follwing script files to your index.html:
-* Scroller.js
-* Animate.js
-
-The list is one additional file 'InfiniteList.js' which can be added to the index.html and be used globally or referenced using RequireJS/CommonJS, both are supported.
+Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
+If you need it as a standalone script that is included from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
 
 ### In NPM
 ```bash
