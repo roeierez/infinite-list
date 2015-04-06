@@ -36,7 +36,7 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 
 ### In the Browser
 Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
-If you need it as a standalone script that is included from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
+If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
 
 ### In NPM
 ```bash
