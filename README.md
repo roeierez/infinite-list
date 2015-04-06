@@ -79,10 +79,6 @@ The user should feed the callback with two paramters:
 * pageItemsCount - the number of items loaded in this page
 * hasMore - Are there more items to be loaded or this is the last page of the list.
 
-### scrollToOffset(offset, animate)
-
-A function that receive the offset to scroll and scroll the list to that position with/without animation
-
 ### scrollToItem(index, animate)
 
 A function that receive the index of item and scroll the list to that item position with/without animation
