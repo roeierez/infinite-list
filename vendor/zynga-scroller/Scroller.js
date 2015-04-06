@@ -13,6 +13,7 @@
  */
 
 var Scroller;
+var core = require('./Animate');
 
 (function() {
 	
@@ -1274,5 +1275,7 @@ var Scroller;
 	for (var key in members) {
 		Scroller.prototype[key] = members[key];
 	}
+
+	module.exports = Scroller;
 		
 })();
