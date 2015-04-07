@@ -246,12 +246,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	
 	    function runAnimationLoop(){
-	        var lastStepTime = new Date().getTime();
+	        var lastStepTime = new Date().getTime(),
+	            frames = 0;
 	        runAnimation = true;
 	        var animationStep = function(){
 	            var currentTime = new Date().getTime();
-	            measuredFPS = Math.min(60, 1000 / Math.max(1, currentTime - lastStepTime));
-	            lastStepTime = currentTime;
+	            frames++;
+	            if (currentTime - lastStepTime > 200) {
+	                measuredFPS = Math.min(60, 1000 * frames / (currentTime - lastStepTime));
+	                lastStepTime = currentTime;
+	                frames = 0;
+	            }
 	            if (needsRender) {
 	                render();
 	            }
@@ -259,7 +264,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                requestAnimationFrame(animationStep);
 	            }
 	        }
-	        animationStep();
+	        requestAnimationFrame(animationStep);
 	    }
 	
 	    function calculateHeights() {
