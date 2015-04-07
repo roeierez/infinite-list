@@ -1,6 +1,6 @@
-var Scroller = require("../vendor/zynga-scroller/Scroller.js");
-
-var DEFAULT_ITEM_HEIGHT = 40,
+var Scroller = require("../vendor/zynga-scroller/Scroller.js"),
+    DEFAULT_ITEM_HEIGHT = 40,
+    MIN_FPS = 30,
     Helpers = {
         applyElementStyle: function (element, styleObj) {
             Object.keys(styleObj).forEach(function (key) {
@@ -9,7 +9,7 @@ var DEFAULT_ITEM_HEIGHT = 40,
                 }
             })
         }
-    }
+    };
 
 var Layer = function (parentElement) {
     var listItemElement = null,
@@ -19,7 +19,7 @@ var Layer = function (parentElement) {
     listItemElement = createListItemWrapperElement();
     parentElement.appendChild(listItemElement);
 
-    function attach(index, topOffset, renderer, width, height, itemIdentifier) {
+    function attach(index, topOffset, width, height, itemIdentifier) {
         itemIndex = index;
 
         Helpers.applyElementStyle(listItemElement, {
@@ -28,7 +28,6 @@ var Layer = function (parentElement) {
             webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)'
         });
 
-        renderer(itemIndex, listItemElement);
         identifier = itemIdentifier;
         return this;
     }
@@ -155,7 +154,8 @@ var InfiniteList = function (listConfig) {
         touchConnector = null,
         topOffset = 0,
         runAnimation = false,
-        needsRender = true;
+        needsRender = true,
+        measuredFPS = 60;
 
     for (key in listConfig){
         if (listConfig.hasOwnProperty(key)){
@@ -183,11 +183,14 @@ var InfiniteList = function (listConfig) {
     }
 
     function runAnimationLoop(){
+        var lastStepTime = new Date().getTime();
         runAnimation = true;
         var animationStep = function(){
+            var currentTime = new Date().getTime();
+            measuredFPS = Math.min(60, 1000 / Math.max(1, currentTime - lastStepTime));
+            lastStepTime = currentTime;
             if (needsRender) {
                 render();
-                needsRender = false;
             }
             if (runAnimation) {
                 requestAnimationFrame(animationStep);
@@ -282,6 +285,12 @@ var InfiniteList = function (listConfig) {
         needsRender = true;
     }
 
+    function isBusy(){
+        return measuredFPS < MIN_FPS;
+    }
+
+    var itemsNeedRerender = {};
+
     /*
      This method fix the list according to the top positoin:
      1. render the list items, recycle from the pool if needed and bring not needed items back to the pool.
@@ -309,15 +318,39 @@ var InfiniteList = function (listConfig) {
         var renderedStart = renderedListItems.length > 0 ? renderedListItems[0].getItemIndex() : (bottomVisibleIndex + 1),
             topItems = [];
 
+        var systemBusyRenderer = function(index, domElement){
+                domElement.innerHTML = "Loading...";
+            },
+            itemRendered = false,
+            renderListItem = function(listItem){
+                var renderBusy =  isBusy();
+                var renderer = !renderBusy ? config.itemRenderer : systemBusyRenderer;
+                renderer(listItem.getItemIndex(), listItem.getDomElement());
+                if (renderBusy){
+                    itemsNeedRerender[listItem.getItemIndex()] = listItem;
+                }
+            }
+
         //fill the gaps on top
         for (var i = topVisibleIndex; i < renderedStart; ++i) {
-            pushLayerAtIndex(i, topItems);
+            renderListItem(pushLayerAtIndex(i, topItems));
+            itemRendered = true;
         }
         renderedListItems = topItems.concat(renderedListItems);
 
         //fill the gaps on bottom
         for (var i = renderedListItems[renderedListItems.length - 1].getItemIndex() + 1; i <= Math.min(config.itemsCount - 1, bottomVisibleIndex); ++i) {
-            pushLayerAtIndex(i, renderedListItems);
+            renderListItem(pushLayerAtIndex(i, renderedListItems));
+            itemRendered = true;
+        }
+
+        var indicesForRerender = Object.keys(itemsNeedRerender);
+        if (!itemRendered && !isBusy()){
+            if (indicesForRerender.length > 0){
+                var indexToRender = indicesForRerender.shift();
+                config.itemRenderer(itemsNeedRerender[indexToRender].getItemIndex(), itemsNeedRerender[indexToRender].getDomElement());
+                delete itemsNeedRerender[indexToRender];
+            }
         }
 
         if (bottomVisibleIndex > config.itemsCount - 1){
@@ -326,6 +359,7 @@ var InfiniteList = function (listConfig) {
 
         updateScrollbar();
         Helpers.applyElementStyle(scrollElement, {webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)'});
+        needsRender = (indicesForRerender.length > 0);
     }
 
     /*
@@ -351,7 +385,7 @@ var InfiniteList = function (listConfig) {
     /*
      Borrow a layer from the LayersPool and attach it to a certain item at index.
      */
-    function pushLayerAtIndex(index, listItems, identifier, height, renderer) {
+    function pushLayerAtIndex(index, listItems, identifier, height) {
         var layerIdentifier = identifier || (config.itemTypeGetter ? config.itemTypeGetter(index) : '');
         var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
         if (layer == null) {
@@ -359,13 +393,15 @@ var InfiniteList = function (listConfig) {
         }
         //index, topOffset, renderer, width, height, itemIdentifier
         var itemHeight = height || config.itemHeightGetter && config.itemHeightGetter(index);
-        layer.attach(index, accumulatedRowHeights[index], renderer || config.itemRenderer, rootElement.clientWidth - 9, itemHeight, layerIdentifier);
+        layer.attach(index, accumulatedRowHeights[index], rootElement.clientWidth - 9, itemHeight, layerIdentifier);
         listItems.push(layer);
+        return layer;
     }
 
     function renderLoadMore(){
         if (renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
-            pushLayerAtIndex(config.itemsCount, renderedListItems, '$LoadMore', -1, config.loadMoreRenderer);
+            var loadMoreLayer = pushLayerAtIndex(config.itemsCount, renderedListItems, '$LoadMore', -1);
+            config.loadMoreRenderer(config.itemsCount, loadMoreLayer.getDomElement());
             config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
                 config.hasMore = hasMore;
                 config.itemsCount += pageItemsCount;
