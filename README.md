@@ -35,11 +35,8 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 ## Installation
 
 ### In the Browser
-I am using zynga-scroller for the scroller implementation so you need to add the follwing script files to your index.html:
-* Scroller.js
-* Animate.js
-
-The list is one additional file 'InfiniteList.js' which can be added to the index.html and be used globally or referenced using RequireJS/CommonJS, both are supported.
+Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
+If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
 
 ### In NPM
 ```bash
@@ -78,10 +75,6 @@ The list will render "Loading...' component and wait for the call back to return
 The user should feed the callback with two paramters:
 * pageItemsCount - the number of items loaded in this page
 * hasMore - Are there more items to be loaded or this is the last page of the list.
-
-### scrollToOffset(offset, animate)
-
-A function that receive the offset to scroll and scroll the list to that position with/without animation
 
 ### scrollToItem(index, animate)
 
