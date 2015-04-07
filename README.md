@@ -2,7 +2,7 @@
 
 A 60fps infinite scrollable list for mobile devices.
 There are some implementation of infinite scrolling out there.
-The best of them renders to the DOM only what the user sees on screen at a give time and use GPU accelration for translating items.
+The best of them renders to the DOM only what the user sees onin screen at a give time and use GPU accelration for translating items.
 These techniques are used in this implementation too, but in order to achieve smooth scrolling in a list with complex items with complex DOM, or when the user scrolls fast even on old devices they are not enough.
 
 In addition this list impements the following:
@@ -17,7 +17,7 @@ var parentElement = ...
 
 var infiniteList = new harmonie.InfiniteList(
   {
-    initialItemsCount: 100000,
+    itemsCount: 100000,
     itemRenderer: function(domElement, index){
       domElement.innerHTML = "Item " + index;
     },
@@ -54,7 +54,7 @@ Not yet supported
 Create an InfinteList. 
 config has the following properties:
 
-#### initialItemsCount [Number]
+#### itemsCount [Number]
 The number of items in the list
 
 #### hasMore [Boolean]
