@@ -19,7 +19,7 @@ var list = new InfiniteList({
     },
 
     pageFetcher: function(fromIndex, callback){
-        googleSearchImage('monkey', fromIndex, function(results){
+        googleSearchImage('icon', fromIndex, function(results){
             if (!results.responseData){
                 callback([], false);
                 return;

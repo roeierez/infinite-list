@@ -153,7 +153,9 @@ var InfiniteList = function (listConfig) {
         accumulatedRowHeights = [],
         layersPool = new LayersPool(),
         touchConnector = null,
-        topOffset = 0;
+        topOffset = 0,
+        runAnimation = false,
+        needsRender = true;
 
     for (key in listConfig){
         if (listConfig.hasOwnProperty(key)){
@@ -166,16 +168,32 @@ var InfiniteList = function (listConfig) {
         initializeRootElement(domElement);
         initializeScroller(domElement, touchProvider);
         window.addEventListener('resize', refresh.bind(this));
+        runAnimationLoop();
         refresh();
         return this;
     }
 
     function detach() {
+        runAnimation = false;
         if (touchConnector){
             touchConnector.disconnect();
         }
         parentElement.removeChild(rootElement);
         window.removeEventListener('resize', refresh.bind(this));
+    }
+
+    function runAnimationLoop(){
+        runAnimation = true;
+        var animationStep = function(){
+            if (needsRender) {
+                render();
+                needsRender = false;
+            }
+            if (runAnimation) {
+                requestAnimationFrame(animationStep);
+            }
+        }
+        animationStep();
     }
 
     function calculateHeights() {
@@ -236,7 +254,7 @@ var InfiniteList = function (listConfig) {
 
         scroller = new Scroller(function (left, top) {
             topOffset = top || 0;
-            render();
+            needsRender = true;
         });
 
         visibleHeight = parentElement.clientHeight;
@@ -261,9 +279,7 @@ var InfiniteList = function (listConfig) {
         renderedListItems = [];
         calculateHeights();
         updateScrollerDimentions(parentElement);
-        requestAnimationFrame(function(){
-            render();
-        });
+        needsRender = true;
     }
 
     /*

@@ -216,7 +216,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        accumulatedRowHeights = [],
 	        layersPool = new LayersPool(),
 	        touchConnector = null,
-	        topOffset = 0;
+	        topOffset = 0,
+	        runAnimation = false,
+	        needsRender = true;
 	
 	    for (key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
@@ -229,16 +231,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	        initializeRootElement(domElement);
 	        initializeScroller(domElement, touchProvider);
 	        window.addEventListener('resize', refresh.bind(this));
+	        runAnimationLoop();
 	        refresh();
 	        return this;
 	    }
 	
 	    function detach() {
+	        runAnimation = false;
 	        if (touchConnector){
 	            touchConnector.disconnect();
 	        }
 	        parentElement.removeChild(rootElement);
 	        window.removeEventListener('resize', refresh.bind(this));
+	    }
+	
+	    function runAnimationLoop(){
+	        runAnimation = true;
+	        var animationStep = function(){
+	            if (needsRender) {
+	                render();
+	                needsRender = false;
+	            }
+	            if (runAnimation) {
+	                requestAnimationFrame(animationStep);
+	            }
+	        }
+	        animationStep();
 	    }
 	
 	    function calculateHeights() {
@@ -299,7 +317,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	        scroller = new Scroller(function (left, top) {
 	            topOffset = top || 0;
-	            render();
+	            needsRender = true;
 	        });
 	
 	        visibleHeight = parentElement.clientHeight;
@@ -324,9 +342,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        renderedListItems = [];
 	        calculateHeights();
 	        updateScrollerDimentions(parentElement);
-	        requestAnimationFrame(function(){
-	            render();
-	        });
+	        needsRender = true;
 	    }
 	
 	    /*
@@ -434,15 +450,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scroller.scrollTo(0, accumulatedRowHeights[index], animate);
 	    }
 	
-	    function scrollToOffset(offset, animate) {
-	        scroller.scrollTo(0, offset, animate);
-	    }
-	
 	    return {
 	        attach: attach,
 	        detach: detach,
 	        scrollToItem: scrollToItem,
-	        scrollToOffset: scrollToOffset,
 	        refresh: refresh
 	    }
 	
@@ -1776,13 +1787,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 		// Create namespaces
 		var core = module.exports = { effect : {} };
-		//if (!global.core) {
-		//	global.core = { effect : {} };
-	    //
-		//} else if (!core.effect) {
-		//	core.effect = {};
-		//}
-	
 		core.effect.Animate = {
 	
 			/**
