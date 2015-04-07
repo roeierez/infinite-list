@@ -6,7 +6,7 @@ The best of them renders to the DOM only what the user sees on screen at a give 
 These techniques are used in this implementation too, but in order to achieve smooth scrolling in a list with complex items with complex DOM, or when the user scrolls fast even on old devices they are not enough.
 
 In addition this list impements the following:
-1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclingView.
+1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
 2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
 3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.
 
@@ -17,7 +17,7 @@ var parentElement = ...
 
 var infiniteList = new harmonie.InfiniteList(
   {
-    itemsCount: 100000,
+    initialItemsCount: 100000,
     itemRenderer: function(domElement, index){
       domElement.innerHTML = "Item " + index;
     },
@@ -29,7 +29,7 @@ var infiniteList = new harmonie.InfiniteList(
 ```
 
 The first argument to the itemRenderer is a domElement. The first time this element is rendered it is an empty DIV.
-Later on when this item becomes invisible because the user scrolls, for example, the DIV is not destroyed but cached and recycled for later use.
+Later on when this item becomes invisible because of scrolling action, for example, the DIV is not destroyed but cached and recycled for later use.
 The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.
 
 ## Installation
@@ -40,11 +40,11 @@ If you need it as a standalone script that is referenced from your html file the
 
 ### In NPM
 ```bash
-not yet supported
+Not yet supported
 ```
 ### bower
 ```bash
-not yet supported
+Not yet supported
 ```
 
 ## API
@@ -54,7 +54,7 @@ not yet supported
 Create an InfinteList. 
 config has the following properties:
 
-#### itemsCount [Number]
+#### initialItemsCount [Number]
 The number of items in the list
 
 #### hasMore [Boolean]
