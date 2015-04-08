@@ -39,13 +39,10 @@ Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
 If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
 
 ### In NPM
-```bash
 Not yet supported
-```
+
 ### bower
-```bash
 Not yet supported
-```
 
 ## API
 
