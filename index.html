@@ -1,0 +1,170 @@
+<!doctype html>
+<!-- The Time Machine GitHub pages theme was designed and developed by Jon Rohan, on Feb 7, 2012. -->
+<!-- Follow him for fun. http://twitter.com/jonrohan. Tail his code on https://github.com/jonrohan -->
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+  <link rel="stylesheet" href="stylesheets/stylesheet.css" media="screen">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/script.js"></script>
+
+  <title>Infinite-list</title>
+  <meta name="description" content="Infinite list in javascript that scrolls in 60fps">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+</head>
+
+<body>
+
+  <div class="wrapper">
+    <header>
+      <h1 class="title">Infinite-list</h1>
+    </header>
+    <div id="container">
+      <p class="tagline">Infinite list in javascript that scrolls in 60fps</p>
+      <div id="main" role="main">
+        <div class="download-bar">
+        <div class="inner">
+          <a href="https://github.com/roeierez/infinite-list/tarball/master" class="download-button tar"><span>Download</span></a>
+          <a href="https://github.com/roeierez/infinite-list/zipball/master" class="download-button zip"><span>Download</span></a>
+          <a href="https://github.com/roeierez/infinite-list" class="code">View Infinite-list on GitHub</a>
+        </div>
+        <span class="blc"></span><span class="trc"></span>
+        </div>
+        <article class="markdown-body">
+          <h1>
+<a id="infinitelist" class="anchor" href="#infinitelist" aria-hidden="true"><span class="octicon octicon-link"></span></a>InfiniteList</h1>
+
+<p>A 60fps infinite scrollable list for mobile devices.
+There are some implementation of infinite scrolling out there.
+The best of them renders to the DOM only what the user sees onin screen at a give time and use GPU accelration for translating items.
+These techniques are used in this implementation too, but in order to achieve smooth scrolling in a list with complex items with complex DOM, or when the user scrolls fast even on old devices they are not enough.</p>
+
+<p>In addition this list impements the following:
+1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
+2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
+3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.</p>
+
+<h2>
+<a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
+
+<div class="highlight highlight-bash"><pre>var parentElement = ...
+
+var infiniteList = new harmonie.InfiniteList(
+  {
+    itemsCount: 100000,
+    itemRenderer: function(domElement, index){
+      domElement.innerHTML = <span class="pl-s"><span class="pl-pds">"</span>Item <span class="pl-pds">"</span></span> + index<span class="pl-k">;</span>
+    },
+    itemHeightGetter: function(index){
+      <span class="pl-k">return</span> 50<span class="pl-k">;</span>
+    }
+  }
+).attach(parentElement)</pre></div>
+
+<p>The first argument to the itemRenderer is a domElement. The first time this element is rendered it is an empty DIV.
+Later on when this item becomes invisible because of scrolling action, for example, the DIV is not destroyed but cached and recycled for later use.
+The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.</p>
+
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<h3>
+<a id="in-the-browser" class="anchor" href="#in-the-browser" aria-hidden="true"><span class="octicon octicon-link"></span></a>In the Browser</h3>
+
+<p>Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
+If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. </p>
+
+<h3>
+<a id="in-npm" class="anchor" href="#in-npm" aria-hidden="true"><span class="octicon octicon-link"></span></a>In NPM</h3>
+
+<div class="highlight highlight-bash"><pre>Not yet supported</pre></div>
+
+<h3>
+<a id="bower" class="anchor" href="#bower" aria-hidden="true"><span class="octicon octicon-link"></span></a>bower</h3>
+
+<div class="highlight highlight-bash"><pre>Not yet supported</pre></div>
+
+<h2>
+<a id="api" class="anchor" href="#api" aria-hidden="true"><span class="octicon octicon-link"></span></a>API</h2>
+
+<h3>
+<a id="constructor-config" class="anchor" href="#constructor-config" aria-hidden="true"><span class="octicon octicon-link"></span></a>constructor (config)</h3>
+
+<p>Create an InfinteList. 
+config has the following properties:</p>
+
+<h4>
+<a id="itemscount-number" class="anchor" href="#itemscount-number" aria-hidden="true"><span class="octicon octicon-link"></span></a>itemsCount [Number]</h4>
+
+<p>The number of items in the list</p>
+
+<h4>
+<a id="hasmore-boolean" class="anchor" href="#hasmore-boolean" aria-hidden="true"><span class="octicon octicon-link"></span></a>hasMore [Boolean]</h4>
+
+<p>True if we have more items to load (paging)</p>
+
+<h4>
+<a id="function-itemrendererdomelement-index" class="anchor" href="#function-itemrendererdomelement-index" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemRenderer(domElement, index)</h4>
+
+<p>The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.</p>
+
+<h4>
+<a id="function-itemheightgetterindex" class="anchor" href="#function-itemheightgetterindex" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemHeightGetter(index)</h4>
+
+<p>Returns the height of an item by index</p>
+
+<h4>
+<a id="function-itemtypegetterindex" class="anchor" href="#function-itemtypegetterindex" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemTypeGetter(index)</h4>
+
+<p>Returns the type of an item by its index. This type is used as the key for recycling elements which means that items with the same type might share the same domElement (if they are not visible together at the same time).</p>
+
+<h4>
+<a id="function-bool-pagefetcherfromindex-callback" class="anchor" href="#function-bool-pagefetcherfromindex-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function Bool pageFetcher(fromIndex, callback)</h4>
+
+<p>This method will be invoked when the list is scrolled to the end and 'hasMore' value is true.
+The list will render "Loading...' component and wait for the call back to return.
+The user should feed the callback with two paramters:</p>
+
+<ul>
+<li>pageItemsCount - the number of items loaded in this page</li>
+<li>hasMore - Are there more items to be loaded or this is the last page of the list.</li>
+</ul>
+
+<h3>
+<a id="scrolltoitemindex-animate" class="anchor" href="#scrolltoitemindex-animate" aria-hidden="true"><span class="octicon octicon-link"></span></a>scrollToItem(index, animate)</h3>
+
+<p>A function that receive the index of item and scroll the list to that item position with/without animation</p>
+
+<h3>
+<a id="refresh" class="anchor" href="#refresh" aria-hidden="true"><span class="octicon octicon-link"></span></a>refresh()</h3>
+
+<p>A function that tells the list to render again the items that are visible to the user.
+This is usually used when the user has changed the data of the list and wants to refresh the UI.</p>
+        </article>
+      </div>
+    </div>
+    <footer>
+      <div class="owner">
+      <p><a href="https://github.com/roeierez" class="avatar"><img src="https://avatars1.githubusercontent.com/u/5394889?v=3&amp;s=60" width="48" height="48"></a> <a href="https://github.com/roeierez">roeierez</a> maintains <a href="https://github.com/roeierez/infinite-list">Infinite-list</a></p>
+
+
+      </div>
+      <div class="creds">
+        <small>This page generated using <a href="https://pages.github.com/">GitHub Pages</a><br>theme by <a href="https://twitter.com/jonrohan/">Jon Rohan</a></small>
+      </div>
+    </footer>
+  </div>
+  <div class="current-section">
+    <a href="#top">Scroll to top</a>
+    <a href="https://github.com/roeierez/infinite-list/tarball/master" class="tar">tar</a><a href="https://github.com/roeierez/infinite-list/zipball/master" class="zip">zip</a><a href="" class="code">source code</a>
+    <p class="name"></p>
+  </div>
+
+  
+</body>
+</html>
