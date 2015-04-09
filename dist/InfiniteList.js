@@ -446,36 +446,37 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var LayersPool = function () {
-	    var layersByIdentifier = {};
+	var StyleHelpers = __webpack_require__(5),
+	    LayersPool = function () {
+	        var layersByIdentifier = {};
 
-	    function addLayer(layer, hide) {
-	        var layerIdentifier = layer.getIdentifier();
-	        if (layersByIdentifier[layerIdentifier] == null) {
-	            layersByIdentifier[layerIdentifier] = [];
+	        function addLayer(layer, hide) {
+	            var layerIdentifier = layer.getIdentifier();
+	            if (layersByIdentifier[layerIdentifier] == null) {
+	                layersByIdentifier[layerIdentifier] = [];
+	            }
+	            layersByIdentifier[layerIdentifier].push(layer);
+	            if (hide){
+	                StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+	            }
 	        }
-	        layersByIdentifier[layerIdentifier].push(layer);
-	        if (hide){
-	            Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+
+	        function borrowLayerWithIdentifier(identifier) {
+	            if (layersByIdentifier[identifier] == null) {
+	                return null;
+	            }
+	            var layer = layersByIdentifier[identifier].pop();
+	            if (layer != null) {
+	                StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'block'})
+	            }
+	            return layer;
+	        }
+
+	        return {
+	            addLayer: addLayer,
+	            borrowLayerWithIdentifier: borrowLayerWithIdentifier
 	        }
 	    }
-
-	    function borrowLayerWithIdentifier(identifier) {
-	        if (layersByIdentifier[identifier] == null) {
-	            return null;
-	        }
-	        var layer = layersByIdentifier[identifier].pop();
-	        if (layer != null) {
-	            Helpers.applyElementStyle(layer.getDomElement(), {display: 'block'})
-	        }
-	        return layer;
-	    }
-
-	    return {
-	        addLayer: addLayer,
-	        borrowLayerWithIdentifier: borrowLayerWithIdentifier
-	    }
-	}
 
 	module.exports = LayersPool;
 
@@ -508,18 +509,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 
 	    function connectTouch(){
-	        touchProvider.addEventListener('touchstart',doTouchStart);
-	        touchProvider.addEventListener('touchmove', doTouchMove);
-	        touchProvider.addEventListener('touchend',doTouchEnd);
-	        touchProvider.addEventListener('touchcancel', doTouchCancel);
-	    }
-
-	    function disconnect(){
 	        if ('ontouchstart' in window) {
-	            touchProvider.removeEventListener('touchstart', doTouchStart);
-	            touchProvider.removeEventListener('touchmove', doTouchMove);
-	            touchProvider.removeEventListener('touchend', doTouchEnd);
-	            touchProvider.removeEventListener('touchcancel', doTouchCancel);
+	            touchProvider.addEventListener('touchstart', doTouchStart);
+	            touchProvider.addEventListener('touchmove', doTouchMove);
+	            touchProvider.addEventListener('touchend', doTouchEnd);
+	            touchProvider.addEventListener('touchcancel', doTouchCancel);
 	        } else {
 	            var mousedown = false;
 
@@ -565,6 +559,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            }, false);
 	        }
+	    }
+
+	    function disconnect(){
+	        touchProvider.removeEventListener('touchstart', doTouchStart);
+	        touchProvider.removeEventListener('touchmove', doTouchMove);
+	        touchProvider.removeEventListener('touchend', doTouchEnd);
+	        touchProvider.removeEventListener('touchcancel', doTouchCancel);
 	    }
 
 	    function setDimensions () {
