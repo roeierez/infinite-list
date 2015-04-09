@@ -17,7 +17,7 @@ In addition this list impements the following:
 ```bash
 var parentElement = ...
 
-var infiniteList = new harmonie.InfiniteList(
+var infiniteList = new InfiniteList(
   {
     itemsCount: 100000,
     itemRenderer: function(domElement, index){
@@ -35,13 +35,25 @@ Later on when this item becomes invisible because of scrolling action, for examp
 The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.
 
 ## Installation
+infinite-list uses a Universal Module Definition do you can use it with both CommonJS and RequireJS.
+
+### CommonJS
+```
+require('infinite-list')
+```
+
+### RequireJS
+```
+define(['[path to list project]/dist/InfiniteList.js'], function(list){
+  //your code goes here
+});
+```
 
 ### In the Browser
-Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
 If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
 
 ### In NPM
-Not yet supported
+npm install infinite-list
 
 ### bower
 Not yet supported
