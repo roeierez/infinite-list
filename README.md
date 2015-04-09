@@ -60,13 +60,16 @@ True if we have more items to load (paging)
 #### Function itemRenderer(domElement, index) 
 The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.
 
+#### Function loadMoreRenderer(domElement, index)
+The renderer method to invoke a new page is about to be fetched and loadMore component should be rendered. This method should populate the domElement with the HTML markup.
+
 #### Function itemHeightGetter(index)
 Returns the height of an item by index
 
 #### Function itemTypeGetter(index) 
 Returns the type of an item by its index. This type is used as the key for recycling elements which means that items with the same type might share the same domElement (if they are not visible together at the same time).
 
-#### Function Bool pageFetcher(fromIndex, callback)
+#### Function pageFetcher(fromIndex, callback)
 This method will be invoked when the list is scrolled to the end and 'hasMore' value is true.
 The list will render "Loading...' component and wait for the call back to return.
 The user should feed the callback with two paramters:
