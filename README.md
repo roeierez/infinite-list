@@ -56,7 +56,7 @@ If you need it as a standalone script that is referenced from your html file the
 npm install infinite-list
 
 ### bower
-Not yet supported
+bower install infinite-list
 
 ## API
 
