@@ -9,7 +9,7 @@ var StyleHelpers = require('./StyleHelpers'),
             }
             layersByIdentifier[layerIdentifier].push(layer);
             if (hide){
-                Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+                StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
             }
         }
 
