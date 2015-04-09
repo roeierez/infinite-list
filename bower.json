@@ -1,0 +1,40 @@
+{
+  "name": "infinite-list",
+  "version": "1.0.1",
+  "homepage": "http://roeierez.github.io/infinite-list/",
+  "authors": [
+    "(Roei Erez <roeierez@gmail.com>)"
+  ],
+  "description": "Infinite high performanced list implemented in javascript",
+  "main": "src/InfiniteList.js",
+  "moduleType": [
+    "amd",
+    "node"
+  ],
+  "keywords": [
+    "javascript",
+    "infinite",
+    "list",
+    "scroll",
+    "virtual",
+    "scrolling",
+    "scroller",
+    "performance",
+    "60fps",
+    "mobile",
+    "iphone",
+    "android"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "devDependencies": {
+    "jsx-loader": "0.12.2",
+    "webpack": "1.6.0"
+  }
+}
