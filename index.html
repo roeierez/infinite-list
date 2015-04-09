@@ -1,36 +1,25 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en-us">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
     <title>Infinite-list by roeierez</title>
-
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="javascripts/scale.fix.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
   <body>
-    <div class="wrapper">
-      <header>
-        <h1 class="header">Infinite-list</h1>
-        <p class="header">Infinite list in javascript that scrolls in 60fps</p>
+    <section class="page-header">
+      <h1 class="project-name">Infinite-list</h1>
+      <h2 class="project-tagline">Infinite list in javascript that scrolls in 60fps</h2>
+      <a href="https://github.com/roeierez/infinite-list" class="btn">View on GitHub</a>
+      <a href="https://github.com/roeierez/infinite-list/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/roeierez/infinite-list/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
 
-        <ul>
-          <li class="download"><a class="buttons" href="https://github.com/roeierez/infinite-list/zipball/master">Download ZIP</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/roeierez/infinite-list/tarball/master">Download TAR</a></li>
-          <li><a class="buttons github" href="https://github.com/roeierez/infinite-list">View On GitHub</a></li>
-        </ul>
-
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/roeierez">roeierez</a></p>
-
-
-      </header>
-      <section>
-        <h1>
+    <section class="main-content">
+      <h1>
 <a id="infinitelist" class="anchor" href="#infinitelist" aria-hidden="true"><span class="octicon octicon-link"></span></a>InfiniteList</h1>
 
 <p>A 60fps infinite scrollable list for mobile devices.
@@ -50,7 +39,7 @@ These techniques are used in this implementation too, but in order to achieve sm
 
 <div class="highlight highlight-bash"><pre>var parentElement = ...
 
-var infiniteList = new harmonie.InfiniteList(
+var infiniteList = new InfiniteList(
   {
     itemsCount: 100000,
     itemRenderer: function(domElement, index){
@@ -69,21 +58,36 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 <h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
 
+<p>infinite-list uses a Universal Module Definition do you can use it with both CommonJS and RequireJS.</p>
+
+<h3>
+<a id="commonjs" class="anchor" href="#commonjs" aria-hidden="true"><span class="octicon octicon-link"></span></a>CommonJS</h3>
+
+<pre><code>require('infinite-list')
+</code></pre>
+
+<h3>
+<a id="requirejs" class="anchor" href="#requirejs" aria-hidden="true"><span class="octicon octicon-link"></span></a>RequireJS</h3>
+
+<pre><code>define(['[path to list project]/dist/InfiniteList.js'], function(list){
+  //your code goes here
+});
+</code></pre>
+
 <h3>
 <a id="in-the-browser" class="anchor" href="#in-the-browser" aria-hidden="true"><span class="octicon octicon-link"></span></a>In the Browser</h3>
 
-<p>Both CommonJS and RequireJS are supported. The file is src/InfiniteList.js.
-If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. </p>
+<p>If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. </p>
 
 <h3>
 <a id="in-npm" class="anchor" href="#in-npm" aria-hidden="true"><span class="octicon octicon-link"></span></a>In NPM</h3>
 
-<p>Not yet supported</p>
+<p>npm install infinite-list</p>
 
 <h3>
 <a id="bower" class="anchor" href="#bower" aria-hidden="true"><span class="octicon octicon-link"></span></a>bower</h3>
 
-<p>Not yet supported</p>
+<p>bower install infinite-list</p>
 
 <h2>
 <a id="api" class="anchor" href="#api" aria-hidden="true"><span class="octicon octicon-link"></span></a>API</h2>
@@ -146,12 +150,16 @@ The user should feed the callback with two paramters:</p>
 
 <p>A function that tells the list to render again the items that are visible to the user.
 This is usually used when the user has changed the data of the list and wants to refresh the UI.</p>
-      </section>
-      <footer>
-        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/roeierez/infinite-list">Infinite-list</a> is maintained by <a href="https://github.com/roeierez">roeierez</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
       </footer>
-    </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		
+
+    </section>
+
+  
   </body>
 </html>
+
