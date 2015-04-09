@@ -78,7 +78,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var list = new InfiniteList({
 
 	    itemHeightGetter: function(index){
-	        return 350;
+	        return 360;
 	    },
 
 	    itemRenderer: function(index, domElement){
