@@ -3,7 +3,7 @@ var template = React.createClass({
         return <article>
                 <div className="title">
                     <div className="title-image">
-                        <img src="resources/bird.jpg" className="img"/>
+                        <img src="../resources/bird.jpg" className="img"/>
                     </div>
                     <div className="titleAndTime">
                         <a href="" className="title-text">
@@ -21,7 +21,7 @@ var template = React.createClass({
                 </div>
                 <footer className="footer">
                     <a href="" className="feedback" style={{position: 'relative'}}>
-                        <img src="resources/like-gray.png" style={{width: '20px', height: '20px', position: 'absolute', top: '0px', left: '0px'}} />
+                        <img src="../resources/like-gray.png" style={{width: '20px', height: '20px', position: 'absolute', top: '0px', left: '0px'}} />
                         <span className="myFeedback"></span>
                         Liked
                     </a>

@@ -1,5 +1,5 @@
-
-var template = require('./template'),
+var InfiniteList = require('../../src/InfiniteList'),
+    template = require('./template.jsx'),
     listData = [],
     ITEMS_COUNT = 10000;
 

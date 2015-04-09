@@ -4,9 +4,9 @@
 	else if(typeof define === 'function' && define.amd)
 		define(factory);
 	else if(typeof exports === 'object')
-		exports["InfiniteList"] = factory();
+		exports["listExample"] = factory();
 	else
-		root["InfiniteList"] = factory();
+		root["listExample"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -54,18 +54,69 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(1);
+	module.exports = __webpack_require__(4);
 
 
 /***/ },
-/* 1 */
+/* 1 */,
+/* 2 */,
+/* 3 */,
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Scroller = __webpack_require__(6),
-	    Layer = __webpack_require__(2),
-	    LayersPool = __webpack_require__(3),
-	    TouchToScrollerConnector = __webpack_require__(4),
-	    StyleHelpers = __webpack_require__(5);
+	var InfiniteList = __webpack_require__(5),
+	    template = __webpack_require__(6),
+	    listData = [],
+	    ITEMS_COUNT = 10000;
+
+	for (var i=0; i<ITEMS_COUNT; ++i){
+	    listData.push({
+	        header: 'Tweet number ' + (i + 1),
+	        minutesAgo: i % 20 + 1,
+	        tweetText: 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen'
+	    });
+	}
+
+
+	var list = new InfiniteList({
+
+	    itemHeightGetter: function(index){
+	        return 320;
+	    },
+
+	    itemRenderer: function(index, domElement){
+	        React.render(React.createElement(template, listData[index]), domElement);
+
+	    },
+
+	    pageFetcher: function(fromIndex, callback){
+	        if (fromIndex == ITEMS_COUNT){
+	            callback(0, false);
+	            return;
+	        }
+
+	        setTimeout(function(){
+	            callback(100, true);
+	        }, 2000);
+	    },
+
+	    hasMore: true,
+
+	    itemsCount: 100
+
+	}).attach(document.getElementById('main'));
+
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Scroller = __webpack_require__(11),
+	    Layer = __webpack_require__(7),
+	    LayersPool = __webpack_require__(8),
+	    TouchToScrollerConnector = __webpack_require__(9),
+	    StyleHelpers = __webpack_require__(10);
 	    DEFAULT_ITEM_HEIGHT = 40,
 	    MIN_FPS = 30;
 
@@ -380,10 +431,54 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = InfiniteList;
 
 /***/ },
-/* 2 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var StyleHelpers = __webpack_require__(5);
+	var template = React.createClass({displayName: "template",
+	    render: function(){
+	        return React.createElement("article", null, 
+	                React.createElement("div", {className: "title"}, 
+	                    React.createElement("div", {className: "title-image"}, 
+	                        React.createElement("img", {src: "../resources/bird.jpg", className: "img"})
+	                    ), 
+	                    React.createElement("div", {className: "titleAndTime"}, 
+	                        React.createElement("a", {href: "", className: "title-text"}, 
+	                            this.props.header
+	                        ), 
+	                        React.createElement("span", {className: "title-time"}, 
+	                            this.props.minutesAgo, " minutes ago"
+	                        )
+	                    )
+	                ), 
+	                React.createElement("p", {className: "message-body"}, 
+	                    this.props.tweetText
+	                ), 
+	                React.createElement("div", null
+	                ), 
+	                React.createElement("footer", {className: "footer"}, 
+	                    React.createElement("a", {href: "", className: "feedback", style: {position: 'relative'}}, 
+	                        React.createElement("img", {src: "../resources/like-gray.png", style: {width: '20px', height: '20px', position: 'absolute', top: '0px', left: '0px'}}), 
+	                        React.createElement("span", {className: "myFeedback"}), 
+	                        "Liked"
+	                    ), 
+	                    React.createElement("span", {className: "feedback-summary"}, 
+	                        "1 like"
+	                    ), 
+	                    React.createElement("span", {className: "feedback-summary"}, 
+	                        "2 comments"
+	                    )
+	                )
+	            )
+	    }
+	});
+
+	module.exports = template;
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var StyleHelpers = __webpack_require__(10);
 
 	var Layer = function (parentElement) {
 	    var listItemElement = null,
@@ -440,7 +535,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 3 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var LayersPool = function () {
@@ -478,7 +573,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 4 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var TouchToScrollerConnector = function(touchProvider, scroller){
@@ -520,7 +615,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = TouchToScrollerConnector;
 
 /***/ },
-/* 5 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -538,7 +633,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -556,7 +651,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	var Scroller;
-	var core = __webpack_require__(7);
+	var core = __webpack_require__(12);
 
 	(function() {
 		
@@ -1825,7 +1920,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*

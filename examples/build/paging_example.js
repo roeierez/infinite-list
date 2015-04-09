@@ -4,9 +4,9 @@
 	else if(typeof define === 'function' && define.amd)
 		define(factory);
 	else if(typeof exports === 'object')
-		exports["InfiniteList"] = factory();
+		exports["listExample"] = factory();
 	else
-		root["InfiniteList"] = factory();
+		root["listExample"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -54,18 +54,53 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(1);
+	module.exports = __webpack_require__(3);
 
 
 /***/ },
-/* 1 */
+/* 1 */,
+/* 2 */,
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Scroller = __webpack_require__(6),
-	    Layer = __webpack_require__(2),
-	    LayersPool = __webpack_require__(3),
-	    TouchToScrollerConnector = __webpack_require__(4),
-	    StyleHelpers = __webpack_require__(5);
+	var InfiniteList = __webpack_require__(5),
+	    list = new InfiniteList({
+
+	        itemHeightGetter: function(){
+	            return 50;
+	        },
+
+	        itemRenderer: function(index, domElement){
+	            domElement.innerHTML = 'Item ' + index;
+	        },
+
+	        loadMoreRenderer: function(index, domElement){
+	            domElement.innerHTML = 'I am loading from #' + index;
+	        },
+
+	        pageFetcher: function(fromIndex, pageCallback){
+	            setTimeout(function(){ //simulate network fetch
+	                pageCallback(10, true);
+	            }, 2000)
+	        },
+
+	        hasMore: true,
+
+	        itemsCount: 10
+
+	    }).attach(document.getElementById('main'));
+
+
+/***/ },
+/* 4 */,
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Scroller = __webpack_require__(11),
+	    Layer = __webpack_require__(7),
+	    LayersPool = __webpack_require__(8),
+	    TouchToScrollerConnector = __webpack_require__(9),
+	    StyleHelpers = __webpack_require__(10);
 	    DEFAULT_ITEM_HEIGHT = 40,
 	    MIN_FPS = 30;
 
@@ -380,10 +415,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = InfiniteList;
 
 /***/ },
-/* 2 */
+/* 6 */,
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var StyleHelpers = __webpack_require__(5);
+	var StyleHelpers = __webpack_require__(10);
 
 	var Layer = function (parentElement) {
 	    var listItemElement = null,
@@ -440,7 +476,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 3 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var LayersPool = function () {
@@ -478,7 +514,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 4 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var TouchToScrollerConnector = function(touchProvider, scroller){
@@ -520,7 +556,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = TouchToScrollerConnector;
 
 /***/ },
-/* 5 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -538,7 +574,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -556,7 +592,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	var Scroller;
-	var core = __webpack_require__(7);
+	var core = __webpack_require__(12);
 
 	(function() {
 		
@@ -1825,7 +1861,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*

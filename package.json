@@ -1,0 +1,12 @@
+{
+  "author": "Roei Erez",
+  "name": "infinite-list",
+  "version": "1.0.0",
+  "private": false,
+  "dependencies": {
+  },
+  "devDependencies": {
+    "jsx-loader": "^0.12.2",
+    "webpack": "^1.6.0"
+  }
+}

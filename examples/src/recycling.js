@@ -1,8 +1,7 @@
-
-var listData = [],
+var InfiniteList = require('../../src/InfiniteList'),
     wrapInDiv = function(html){
-        return '<div>' + html + '</div>';
-    };
+            return '<div>' + html + '</div>';
+        };
 
 var list = new InfiniteList({
 

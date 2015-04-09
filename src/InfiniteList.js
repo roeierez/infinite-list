@@ -1,133 +1,10 @@
-var Scroller = require("../vendor/zynga-scroller/Scroller.js"),
+var Scroller = require('../vendor/zynga-scroller/Scroller.js'),
+    Layer = require('./Layer'),
+    LayersPool = require('./layerPool'),
+    TouchToScrollerConnector = require('./TouchToScrollerConnector'),
+    StyleHelpers = require('./StyleHelpers');
     DEFAULT_ITEM_HEIGHT = 40,
-    MIN_FPS = 30,
-    Helpers = {
-        applyElementStyle: function (element, styleObj) {
-            Object.keys(styleObj).forEach(function (key) {
-                if (element.style[key] != styleObj[key]) {
-                    element.style[key] = styleObj[key];
-                }
-            })
-        }
-    };
-
-var Layer = function (parentElement) {
-    var listItemElement = null,
-        identifier = "",
-        itemIndex = -1;
-
-    listItemElement = createListItemWrapperElement();
-    parentElement.appendChild(listItemElement);
-
-    function attach(index, topOffset, width, height, itemIdentifier) {
-        itemIndex = index;
-
-        Helpers.applyElementStyle(listItemElement, {
-            width: width + 'px',
-            height: (height || DEFAULT_ITEM_HEIGHT) + 'px',
-            webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)'
-        });
-
-        identifier = itemIdentifier;
-        return this;
-    }
-
-    function getItemIndex() {
-        return itemIndex;
-    }
-
-    function getDomElement() {
-        return listItemElement;
-    }
-
-    function getIdentifier() {
-        return identifier;
-    }
-
-    function createListItemWrapperElement() {
-        var el = document.createElement('div');
-        Helpers.applyElementStyle(el, {
-            position: 'absolute',
-            top: 0,
-            left: 0
-        });
-        return el;
-    }
-
-    return {
-        attach: attach,
-        getItemIndex: getItemIndex,
-        getDomElement: getDomElement,
-        getIdentifier: getIdentifier
-    }
-};
-
-var LayersPool = function () {
-    var layersByIdentifier = {};
-
-    function addLayer(layer, hide) {
-        var layerIdentifier = layer.getIdentifier();
-        if (layersByIdentifier[layerIdentifier] == null) {
-            layersByIdentifier[layerIdentifier] = [];
-        }
-        layersByIdentifier[layerIdentifier].push(layer);
-        if (hide){
-            Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
-        }
-    }
-
-    function borrowLayerWithIdentifier(identifier) {
-        if (layersByIdentifier[identifier] == null) {
-            return null;
-        }
-        var layer = layersByIdentifier[identifier].pop();
-        if (layer != null) {
-            Helpers.applyElementStyle(layer.getDomElement(), {display: 'block'})
-        }
-        return layer;
-    }
-
-    return {
-        addLayer: addLayer,
-        borrowLayerWithIdentifier: borrowLayerWithIdentifier
-    }
-}
-
-var TouchToScrollerConnector = function(touchProvider, scroller){
-
-    var doTouchStart = function (e) {
-            scroller.doTouchStart(e.touches, e.timeStamp);
-            e.preventDefault();
-        },
-        doTouchMove =  function (e) {
-            scroller.doTouchMove(e.touches, e.timeStamp, e.scale);
-        },
-        doTouchEnd = function (e) {
-            scroller.doTouchEnd(e.timeStamp);
-        },
-        doTouchCancel = function (e) {
-            e.preventDefault();
-        };
-
-    function connect(){
-        touchProvider.addEventListener('touchstart',doTouchStart);
-        touchProvider.addEventListener('touchmove', doTouchMove);
-        touchProvider.addEventListener('touchend',doTouchEnd);
-        touchProvider.addEventListener('touchcancel', doTouchCancel);
-    }
-
-    function disconnect(){
-        touchProvider.removeEventListener('touchstart',doTouchStart);
-        touchProvider.removeEventListener('touchmove', doTouchMove);
-        touchProvider.removeEventListener('touchend',doTouchEnd);
-        touchProvider.removeEventListener('touchcancel', doTouchCancel);
-    }
-
-    return {
-        connect: connect,
-        disconnect: disconnect
-    }
-}
+    MIN_FPS = 30;
 
 var InfiniteList = function (listConfig) {
 
@@ -222,14 +99,14 @@ var InfiniteList = function (listConfig) {
      */
     function initializeRootElement(parentElement) {
         scrollElement = document.createElement('div');
-        Helpers.applyElementStyle(scrollElement, {
+        StyleHelpers.applyElementStyle(scrollElement, {
             position: 'absolute',
             top: 0,
             bottom: 0
         });
 
         rootElement = document.createElement('div');
-        Helpers.applyElementStyle(rootElement, {
+        StyleHelpers.applyElementStyle(rootElement, {
             position: 'relative',
             height: parentElement.clientHeight + 'px',
             width: parentElement.clientWidth + 'px',
@@ -238,7 +115,7 @@ var InfiniteList = function (listConfig) {
         rootElement.appendChild(scrollElement);
 
         scrollbar = document.createElement('div');
-        Helpers.applyElementStyle(scrollbar, {
+        StyleHelpers.applyElementStyle(scrollbar, {
             position: 'absolute',
             top: '0px',
             right: '0px',
@@ -363,7 +240,7 @@ var InfiniteList = function (listConfig) {
         }
 
         updateScrollbar();
-        Helpers.applyElementStyle(scrollElement, {webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)'});
+        StyleHelpers.applyElementStyle(scrollElement, {webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)'});
         needsRender = (indicesForRerender.length > 0);
     }
 
@@ -377,7 +254,7 @@ var InfiniteList = function (listConfig) {
             scrollbarPos = Math.floor(topOffset / (listHeight - attachedElement.clientHeight) * (attachedElement.clientHeight - scrollbarHeight)),
             heightInPx = scrollbarHeight + 'px';
 
-        Helpers.applyElementStyle(scrollbar, {
+        StyleHelpers.applyElementStyle(scrollbar, {
             height: heightInPx,
             webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)'
         });

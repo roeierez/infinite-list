@@ -1,5 +1,5 @@
-
-var searchComponent = React.createClass({displayName: "SearchResults",
+var InfiniteList = require('../../src/InfiniteList'),
+    searchComponent = React.createClass({displayName: "SearchResults",
         render: function() {
             return React.createElement("div", null,
                 React.createElement("IMG", {src: this.props.url, style: {width: '50px', height: '50px', float: 'left'}}, null),
