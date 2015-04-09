@@ -1,4 +1,11 @@
-var TouchToScrollerConnector = function(touchProvider, scroller){
+var Scroller = require('../vendor/zynga-scroller/Scroller');
+
+var TouchScroller = function(parentElement, callback, givenTouchProvider){
+
+    var scroller = new Scroller(callback),
+        touchProvider = givenTouchProvider || parentElement;
+
+    connectTouch();
 
     var doTouchStart = function (e) {
             scroller.doTouchStart(e.touches, e.timeStamp);
@@ -14,7 +21,7 @@ var TouchToScrollerConnector = function(touchProvider, scroller){
             e.preventDefault();
         };
 
-    function connect(){
+    function connectTouch(){
         touchProvider.addEventListener('touchstart',doTouchStart);
         touchProvider.addEventListener('touchmove', doTouchMove);
         touchProvider.addEventListener('touchend',doTouchEnd);
@@ -28,10 +35,18 @@ var TouchToScrollerConnector = function(touchProvider, scroller){
         touchProvider.removeEventListener('touchcancel', doTouchCancel);
     }
 
+    function setDimensions () {
+        scroller.setDimensions.apply(scroller, arguments);
+    }
+
+    function scrollTo () {
+        scroller.scrollTo.apply(scroller, arguments);
+    }
+
     return {
-        connect: connect,
-        disconnect: disconnect
+        disconnect: disconnect,
+        setDimensions: setDimensions
     }
 }
 
-module.exports = TouchToScrollerConnector;
+module.exports = TouchScroller;

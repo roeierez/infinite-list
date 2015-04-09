@@ -1,7 +1,7 @@
 var Scroller = require('../vendor/zynga-scroller/Scroller.js'),
     Layer = require('./Layer'),
     LayersPool = require('./layerPool'),
-    TouchToScrollerConnector = require('./TouchToScrollerConnector'),
+    TouchScroller = require('./TouchScroller'),
     StyleHelpers = require('./StyleHelpers');
     DEFAULT_ITEM_HEIGHT = 40,
     MIN_FPS = 30;
@@ -42,6 +42,7 @@ var InfiniteList = function (listConfig) {
 
     function attach(domElement, touchProvider){
         parentElement = domElement;
+        visibleHeight = parentElement.clientHeight;
         initializeRootElement(domElement);
         initializeScroller(domElement, touchProvider);
         window.addEventListener('resize', refresh.bind(this));
@@ -137,14 +138,16 @@ var InfiniteList = function (listConfig) {
      */
     function initializeScroller(parentElement, touchProvider) {
 
-        scroller = new Scroller(function (left, top) {
-            topOffset = top || 0;
-            needsRender = true;
-        });
+        scroller = new TouchScroller(
+            parentElement,
 
-        visibleHeight = parentElement.clientHeight;
-        touchConnector = new TouchToScrollerConnector(touchProvider || parentElement, scroller);
-        touchConnector.connect();
+            function (left, top) {
+                topOffset = top || 0;
+                needsRender = true;
+            },
+
+            touchProvider
+        );
     }
 
     function updateScrollerDimentions(parentElement){

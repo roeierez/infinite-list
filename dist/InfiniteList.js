@@ -64,7 +64,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var Scroller = __webpack_require__(6),
 	    Layer = __webpack_require__(2),
 	    LayersPool = __webpack_require__(3),
-	    TouchToScrollerConnector = __webpack_require__(4),
+	    TouchToScroller = __webpack_require__(4),
 	    StyleHelpers = __webpack_require__(5);
 	    DEFAULT_ITEM_HEIGHT = 40,
 	    MIN_FPS = 30;
@@ -105,6 +105,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function attach(domElement, touchProvider){
 	        parentElement = domElement;
+	        visibleHeight = parentElement.clientHeight;
 	        initializeRootElement(domElement);
 	        initializeScroller(domElement, touchProvider);
 	        window.addEventListener('resize', refresh.bind(this));
@@ -200,14 +201,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    function initializeScroller(parentElement, touchProvider) {
 
-	        scroller = new Scroller(function (left, top) {
-	            topOffset = top || 0;
-	            needsRender = true;
-	        });
+	        scroller = new TouchScroller(
+	            parentElement,
 
-	        visibleHeight = parentElement.clientHeight;
-	        touchConnector = new TouchToScrollerConnector(touchProvider || parentElement, scroller);
-	        touchConnector.connect();
+	            function (left, top) {
+	                topOffset = top || 0;
+	                needsRender = true;
+	            },
+
+	            touchProvider
+	        );
 	    }
 
 	    function updateScrollerDimentions(parentElement){
@@ -481,7 +484,12 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var TouchToScrollerConnector = function(touchProvider, scroller){
+	var scroller = __webpack_require__(6);
+
+	var TouchToScroller = function(parentElement, callback, touchProvider){
+
+	    var scroller = new Scroller(callback);
+	    connectTouch();
 
 	    var doTouchStart = function (e) {
 	            scroller.doTouchStart(e.touches, e.timeStamp);
@@ -497,7 +505,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            e.preventDefault();
 	        };
 
-	    function connect(){
+	    function connectTouch(){
 	        touchProvider.addEventListener('touchstart',doTouchStart);
 	        touchProvider.addEventListener('touchmove', doTouchMove);
 	        touchProvider.addEventListener('touchend',doTouchEnd);
@@ -511,9 +519,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        touchProvider.removeEventListener('touchcancel', doTouchCancel);
 	    }
 
+	    function setDimensions () {
+	        scroller.setDimensions.apply(scroller, arguments);
+	    }
+
+	    function scrollTo () {
+	        scroller.scrollTo.apply(scroller, arguments);
+	    }
+
 	    return {
-	        connect: connect,
-	        disconnect: disconnect
+	        disconnect: disconnect,
+	        setDimensions: setDimensions
 	    }
 	}
 
