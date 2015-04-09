@@ -64,7 +64,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var Scroller = __webpack_require__(6),
 	    Layer = __webpack_require__(2),
 	    LayersPool = __webpack_require__(3),
-	    TouchToScroller = __webpack_require__(4),
+	    TouchScroller = __webpack_require__(4),
 	    StyleHelpers = __webpack_require__(5);
 	    DEFAULT_ITEM_HEIGHT = 40,
 	    MIN_FPS = 30;
@@ -484,11 +484,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var scroller = __webpack_require__(6);
+	var Scroller = __webpack_require__(6);
 
-	var TouchToScroller = function(parentElement, callback, touchProvider){
+	var TouchScroller = function(parentElement, callback, givenTouchProvider){
 
-	    var scroller = new Scroller(callback);
+	    var scroller = new Scroller(callback),
+	        touchProvider = givenTouchProvider || parentElement;
+
 	    connectTouch();
 
 	    var doTouchStart = function (e) {
@@ -513,10 +515,56 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function disconnect(){
-	        touchProvider.removeEventListener('touchstart',doTouchStart);
-	        touchProvider.removeEventListener('touchmove', doTouchMove);
-	        touchProvider.removeEventListener('touchend',doTouchEnd);
-	        touchProvider.removeEventListener('touchcancel', doTouchCancel);
+	        if ('ontouchstart' in window) {
+	            touchProvider.removeEventListener('touchstart', doTouchStart);
+	            touchProvider.removeEventListener('touchmove', doTouchMove);
+	            touchProvider.removeEventListener('touchend', doTouchEnd);
+	            touchProvider.removeEventListener('touchcancel', doTouchCancel);
+	        } else {
+	            var mousedown = false;
+
+	            touchProvider.addEventListener("mousedown", function(e) {
+
+	                if (e.target.tagName.match(/input|textarea|select/i)) {
+	                    return;
+	                }
+
+	                scroller.doTouchStart([{
+	                    pageX: e.pageX,
+	                    pageY: e.pageY
+	                }], e.timeStamp);
+
+	                mousedown = true;
+	                e.preventDefault();
+
+	            }, false);
+
+	            touchProvider.addEventListener("mousemove", function(e) {
+
+	                if (!mousedown) {
+	                    return;
+	                }
+
+	                scroller.doTouchMove([{
+	                    pageX: e.pageX,
+	                    pageY: e.pageY
+	                }], e.timeStamp);
+
+	                mousedown = true;
+
+	            }, false);
+
+	            touchProvider.addEventListener("mouseup", function(e) {
+
+	                if (!mousedown) {
+	                    return;
+	                }
+
+	                scroller.doTouchEnd(e.timeStamp);
+	                mousedown = false;
+
+	            }, false);
+	        }
 	    }
 
 	    function setDimensions () {
@@ -533,7 +581,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	}
 
-	module.exports = TouchToScrollerConnector;
+	module.exports = TouchScroller;
 
 /***/ },
 /* 5 */

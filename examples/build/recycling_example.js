@@ -494,36 +494,37 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var LayersPool = function () {
-	    var layersByIdentifier = {};
+	var StyleHelpers = __webpack_require__(10),
+	    LayersPool = function () {
+	        var layersByIdentifier = {};
 
-	    function addLayer(layer, hide) {
-	        var layerIdentifier = layer.getIdentifier();
-	        if (layersByIdentifier[layerIdentifier] == null) {
-	            layersByIdentifier[layerIdentifier] = [];
+	        function addLayer(layer, hide) {
+	            var layerIdentifier = layer.getIdentifier();
+	            if (layersByIdentifier[layerIdentifier] == null) {
+	                layersByIdentifier[layerIdentifier] = [];
+	            }
+	            layersByIdentifier[layerIdentifier].push(layer);
+	            if (hide){
+	                Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+	            }
 	        }
-	        layersByIdentifier[layerIdentifier].push(layer);
-	        if (hide){
-	            Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+
+	        function borrowLayerWithIdentifier(identifier) {
+	            if (layersByIdentifier[identifier] == null) {
+	                return null;
+	            }
+	            var layer = layersByIdentifier[identifier].pop();
+	            if (layer != null) {
+	                StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'block'})
+	            }
+	            return layer;
+	        }
+
+	        return {
+	            addLayer: addLayer,
+	            borrowLayerWithIdentifier: borrowLayerWithIdentifier
 	        }
 	    }
-
-	    function borrowLayerWithIdentifier(identifier) {
-	        if (layersByIdentifier[identifier] == null) {
-	            return null;
-	        }
-	        var layer = layersByIdentifier[identifier].pop();
-	        if (layer != null) {
-	            Helpers.applyElementStyle(layer.getDomElement(), {display: 'block'})
-	        }
-	        return layer;
-	    }
-
-	    return {
-	        addLayer: addLayer,
-	        borrowLayerWithIdentifier: borrowLayerWithIdentifier
-	    }
-	}
 
 	module.exports = LayersPool;
 
@@ -556,16 +557,62 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 
 	    function connectTouch(){
-	        touchProvider.addEventListener('touchstart',doTouchStart);
-	        touchProvider.addEventListener('touchmove', doTouchMove);
-	        touchProvider.addEventListener('touchend',doTouchEnd);
-	        touchProvider.addEventListener('touchcancel', doTouchCancel);
+	        if ('ontouchstart' in window) {
+	            touchProvider.addEventListener('touchstart', doTouchStart);
+	            touchProvider.addEventListener('touchmove', doTouchMove);
+	            touchProvider.addEventListener('touchend', doTouchEnd);
+	            touchProvider.addEventListener('touchcancel', doTouchCancel);
+	        } else {
+	            var mousedown = false;
+
+	            touchProvider.addEventListener("mousedown", function(e) {
+
+	                if (e.target.tagName.match(/input|textarea|select/i)) {
+	                    return;
+	                }
+
+	                scroller.doTouchStart([{
+	                    pageX: e.pageX,
+	                    pageY: e.pageY
+	                }], e.timeStamp);
+
+	                mousedown = true;
+	                e.preventDefault();
+
+	            }, false);
+
+	            touchProvider.addEventListener("mousemove", function(e) {
+
+	                if (!mousedown) {
+	                    return;
+	                }
+
+	                scroller.doTouchMove([{
+	                    pageX: e.pageX,
+	                    pageY: e.pageY
+	                }], e.timeStamp);
+
+	                mousedown = true;
+
+	            }, false);
+
+	            touchProvider.addEventListener("mouseup", function(e) {
+
+	                if (!mousedown) {
+	                    return;
+	                }
+
+	                scroller.doTouchEnd(e.timeStamp);
+	                mousedown = false;
+
+	            }, false);
+	        }
 	    }
 
 	    function disconnect(){
-	        touchProvider.removeEventListener('touchstart',doTouchStart);
+	        touchProvider.removeEventListener('touchstart', doTouchStart);
 	        touchProvider.removeEventListener('touchmove', doTouchMove);
-	        touchProvider.removeEventListener('touchend',doTouchEnd);
+	        touchProvider.removeEventListener('touchend', doTouchEnd);
 	        touchProvider.removeEventListener('touchcancel', doTouchCancel);
 	    }
 

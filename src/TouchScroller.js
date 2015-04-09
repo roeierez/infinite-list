@@ -22,16 +22,62 @@ var TouchScroller = function(parentElement, callback, givenTouchProvider){
         };
 
     function connectTouch(){
-        touchProvider.addEventListener('touchstart',doTouchStart);
-        touchProvider.addEventListener('touchmove', doTouchMove);
-        touchProvider.addEventListener('touchend',doTouchEnd);
-        touchProvider.addEventListener('touchcancel', doTouchCancel);
+        if ('ontouchstart' in window) {
+            touchProvider.addEventListener('touchstart', doTouchStart);
+            touchProvider.addEventListener('touchmove', doTouchMove);
+            touchProvider.addEventListener('touchend', doTouchEnd);
+            touchProvider.addEventListener('touchcancel', doTouchCancel);
+        } else {
+            var mousedown = false;
+
+            touchProvider.addEventListener("mousedown", function(e) {
+
+                if (e.target.tagName.match(/input|textarea|select/i)) {
+                    return;
+                }
+
+                scroller.doTouchStart([{
+                    pageX: e.pageX,
+                    pageY: e.pageY
+                }], e.timeStamp);
+
+                mousedown = true;
+                e.preventDefault();
+
+            }, false);
+
+            touchProvider.addEventListener("mousemove", function(e) {
+
+                if (!mousedown) {
+                    return;
+                }
+
+                scroller.doTouchMove([{
+                    pageX: e.pageX,
+                    pageY: e.pageY
+                }], e.timeStamp);
+
+                mousedown = true;
+
+            }, false);
+
+            touchProvider.addEventListener("mouseup", function(e) {
+
+                if (!mousedown) {
+                    return;
+                }
+
+                scroller.doTouchEnd(e.timeStamp);
+                mousedown = false;
+
+            }, false);
+        }
     }
 
     function disconnect(){
-        touchProvider.removeEventListener('touchstart',doTouchStart);
+        touchProvider.removeEventListener('touchstart', doTouchStart);
         touchProvider.removeEventListener('touchmove', doTouchMove);
-        touchProvider.removeEventListener('touchend',doTouchEnd);
+        touchProvider.removeEventListener('touchend', doTouchEnd);
         touchProvider.removeEventListener('touchcancel', doTouchCancel);
     }
 
