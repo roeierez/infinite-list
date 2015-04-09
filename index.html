@@ -43,8 +43,6 @@ These techniques are used in this implementation too, but in order to achieve sm
 2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
 3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.</p>
 
-<p>See <a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Live demo</a> from your mobile device.</p>
-
 <h2>
 <a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
 
@@ -110,6 +108,11 @@ config has the following properties:</p>
 <p>The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.</p>
 
 <h4>
+<a id="function-loadmorerendererdomelement-index" class="anchor" href="#function-loadmorerendererdomelement-index" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function loadMoreRenderer(domElement, index)</h4>
+
+<p>The renderer method to invoke a new page is about to be fetched and loadMore component should be rendered. This method should populate the domElement with the HTML markup.</p>
+
+<h4>
 <a id="function-itemheightgetterindex" class="anchor" href="#function-itemheightgetterindex" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemHeightGetter(index)</h4>
 
 <p>Returns the height of an item by index</p>
@@ -120,7 +123,7 @@ config has the following properties:</p>
 <p>Returns the type of an item by its index. This type is used as the key for recycling elements which means that items with the same type might share the same domElement (if they are not visible together at the same time).</p>
 
 <h4>
-<a id="function-bool-pagefetcherfromindex-callback" class="anchor" href="#function-bool-pagefetcherfromindex-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function Bool pageFetcher(fromIndex, callback)</h4>
+<a id="function-pagefetcherfromindex-callback" class="anchor" href="#function-pagefetcherfromindex-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function pageFetcher(fromIndex, callback)</h4>
 
 <p>This method will be invoked when the list is scrolled to the end and 'hasMore' value is true.
 The list will render "Loading...' component and wait for the call back to return.
