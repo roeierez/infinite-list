@@ -251,6 +251,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function refresh(){
+	        StyleHelpers.applyElementStyle(rootElement, {
+	            height: parentElement.clientHeight + 'px',
+	            width: parentElement.clientWidth + 'px'
+	        });
+
 	        renderedListItems.forEach(function(layer){
 	            layersPool.addLayer(layer, true)
 	        });
