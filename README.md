@@ -19,7 +19,9 @@ var parentElement = ...
 
 var infiniteList = new InfiniteList(
   {
-    itemsCount: 100000,
+    initialPage: {
+      itemsCount: 100000
+    },
     itemRenderer: function(domElement, index){
       domElement.innerHTML = "Item " + index;
     },
@@ -65,11 +67,10 @@ bower install infinite-list
 Create an InfinteList. 
 config has the following properties:
 
-#### itemsCount [Number]
-The number of items in the list
-
-#### hasMore [Boolean]
-True if we have more items to load (paging)
+#### initialPage
+the initial page configuration, has two properties:
+    1. itemsCount [Number] - The number of items in the list.
+    2. hasMore [Boolean] - True if we have more items to load (paging)
 
 #### Function itemRenderer(domElement, index) 
 The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.
@@ -86,7 +87,7 @@ Returns the type of an item by its index. This type is used as the key for recyc
 #### Function pageFetcher(fromIndex, callback)
 This method will be invoked when the list is scrolled to the end and 'hasMore' value is true.
 The list will render "Loading...' component and wait for the call back to return.
-The user should feed the callback with two paramters:
+The user should feed the callback with two parameters:
 * pageItemsCount - the number of items loaded in this page
 * hasMore - Are there more items to be loaded or this is the last page of the list.
 
