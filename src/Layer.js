@@ -10,13 +10,11 @@ var Layer = function (parentElement) {
 
     function attach(index, topOffset, width, height, itemIdentifier) {
         itemIndex = index;
-
         StyleHelpers.applyElementStyle(listItemElement, {
             width: width + 'px',
-            height: (height || DEFAULT_ITEM_HEIGHT) + 'px',
-            webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)'
+            height: (height || DEFAULT_ITEM_HEIGHT) + 'px'
         });
-
+        StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)');
         identifier = itemIdentifier;
         return this;
     }

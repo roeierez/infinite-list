@@ -253,7 +253,7 @@ var InfiniteList = function (listConfig) {
         }
 
         updateScrollbar();
-        StyleHelpers.applyElementStyle(scrollElement, {webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)'});
+        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
         needsRender = (indicesForRerender.length > 0);
     }
 
@@ -268,9 +268,9 @@ var InfiniteList = function (listConfig) {
             heightInPx = scrollbarHeight + 'px';
 
         StyleHelpers.applyElementStyle(scrollbar, {
-            height: heightInPx,
-            webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)'
+            height: heightInPx
         });
+        StyleHelpers.applyTransformStyle(scrollbar, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)');
     }
 
     function getListHeight(){

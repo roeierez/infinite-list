@@ -338,7 +338,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        updateScrollbar();
-	        StyleHelpers.applyElementStyle(scrollElement, {webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)'});
+	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        needsRender = (indicesForRerender.length > 0);
 	    }
 
@@ -353,9 +353,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            heightInPx = scrollbarHeight + 'px';
 
 	        StyleHelpers.applyElementStyle(scrollbar, {
-	            height: heightInPx,
-	            webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)'
+	            height: heightInPx
 	        });
+	        StyleHelpers.applyTransformStyle(scrollbar, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)');
 	    }
 
 	    function getListHeight(){
@@ -431,13 +431,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function attach(index, topOffset, width, height, itemIdentifier) {
 	        itemIndex = index;
-
 	        StyleHelpers.applyElementStyle(listItemElement, {
 	            width: width + 'px',
-	            height: (height || DEFAULT_ITEM_HEIGHT) + 'px',
-	            webkitTransform: 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)'
+	            height: (height || DEFAULT_ITEM_HEIGHT) + 'px'
 	        });
-
+	        StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)');
 	        identifier = itemIdentifier;
 	        return this;
 	    }
@@ -622,17 +620,27 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var styleHelpers = {
-	    applyElementStyle: function (element, styleObj) {
+	var applyElementStyle = function (element, styleObj) {
 	        Object.keys(styleObj).forEach(function (key) {
 	            if (element.style[key] != styleObj[key]) {
 	                element.style[key] = styleObj[key];
 	            }
 	        })
-	    }
+	    },
+
+	    applyTransformStyle = function(element, transformValue){
+	        var styleObject = {};
+	        ['webkit', 'Moz', 'O', 'ms'].forEach(function(prefix){
+	                styleObject[prefix + 'Transform'] = transformValue;
+	            }
+	        );
+	        applyElementStyle(element, styleObject);
 	};
 
-	module.exports = styleHelpers;
+	module.exports = {
+	    applyElementStyle: applyElementStyle,
+	    applyTransformStyle: applyTransformStyle
+	};
 
 
 /***/ },
