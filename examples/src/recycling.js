@@ -32,7 +32,9 @@ var list = new InfiniteList({
         }
     },
 
-    itemsCount: 100
+    initialPage: {
+        itemsCount: 100
+    }
 
 }).attach(document.getElementById('main'));
 

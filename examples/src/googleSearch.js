@@ -31,9 +31,10 @@ var list = new InfiniteList({
         });
     },
 
-    hasMore: true,
-
-    itemsCount: 0
+    initialPage: {
+        hasMore: true,
+        itemsCount: 0
+    }
 
 }).attach(document.getElementById('main'));
 

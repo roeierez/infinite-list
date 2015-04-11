@@ -64,10 +64,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	var InfiniteList = __webpack_require__(5),
 	    list = new InfiniteList({
 	        itemHeightGetter: function(){ return 50;},
+
 	        itemRenderer: function(index, domElement){
 	            domElement.innerHTML = 'Item ' + index;
 	        },
-	        itemsCount: 200
+
+	        initialPage: {
+	            itemsCount: 200
+	        }
+
 	    }).attach(document.getElementById('main'));
 
 
@@ -118,6 +123,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (listConfig.hasOwnProperty(key)){
 	            config[key] = listConfig[key];
 	        }
+	    }
+	    var initialPageConfig = listConfig.initialPage;
+	    if (initialPageConfig){
+	        config.itemsCount = initialPageConfig.itemsCount || 0;
+	        config.hasMore = initialPageConfig.hasMore || false;
 	    }
 
 	    function attach(domElement, touchProvider){
@@ -475,7 +485,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	            layersByIdentifier[layerIdentifier].push(layer);
 	            if (hide){
-	                Helpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
+	                StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
 	            }
 	        }
 
@@ -510,8 +520,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var scroller = new Scroller(callback),
 	        touchProvider = givenTouchProvider || parentElement;
 
-	    connectTouch();
-
 	    var doTouchStart = function (e) {
 	            scroller.doTouchStart(e.touches, e.timeStamp);
 	            e.preventDefault();
@@ -526,57 +534,58 @@ return /******/ (function(modules) { // webpackBootstrap
 	            e.preventDefault();
 	        };
 
+	    connectTouch();
 	    function connectTouch(){
-	        if ('ontouchstart' in window) {
-	            touchProvider.addEventListener('touchstart', doTouchStart);
-	            touchProvider.addEventListener('touchmove', doTouchMove);
-	            touchProvider.addEventListener('touchend', doTouchEnd);
-	            touchProvider.addEventListener('touchcancel', doTouchCancel);
-	        } else {
-	            var mousedown = false;
 
-	            touchProvider.addEventListener("mousedown", function(e) {
+	        touchProvider.addEventListener('touchstart', doTouchStart);
+	        touchProvider.addEventListener('touchmove', doTouchMove);
+	        touchProvider.addEventListener('touchend', doTouchEnd);
+	        touchProvider.addEventListener('touchcancel', doTouchCancel);
 
-	                if (e.target.tagName.match(/input|textarea|select/i)) {
-	                    return;
-	                }
+	        var mousedown = false;
 
-	                scroller.doTouchStart([{
-	                    pageX: e.pageX,
-	                    pageY: e.pageY
-	                }], e.timeStamp);
+	        touchProvider.addEventListener("mousedown", function(e) {
 
-	                mousedown = true;
-	                e.preventDefault();
+	            if (e.target.tagName.match(/input|textarea|select/i)) {
+	                return;
+	            }
 
-	            }, false);
+	            scroller.doTouchStart([{
+	                pageX: e.pageX,
+	                pageY: e.pageY
+	            }], e.timeStamp);
 
-	            touchProvider.addEventListener("mousemove", function(e) {
+	            mousedown = true;
+	            e.preventDefault();
 
-	                if (!mousedown) {
-	                    return;
-	                }
+	        }, false);
 
-	                scroller.doTouchMove([{
-	                    pageX: e.pageX,
-	                    pageY: e.pageY
-	                }], e.timeStamp);
+	        touchProvider.addEventListener("mousemove", function(e) {
 
-	                mousedown = true;
+	            if (!mousedown) {
+	                return;
+	            }
 
-	            }, false);
+	            scroller.doTouchMove([{
+	                pageX: e.pageX,
+	                pageY: e.pageY
+	            }], e.timeStamp);
 
-	            touchProvider.addEventListener("mouseup", function(e) {
+	            mousedown = true;
 
-	                if (!mousedown) {
-	                    return;
-	                }
+	        }, false);
 
-	                scroller.doTouchEnd(e.timeStamp);
-	                mousedown = false;
+	        touchProvider.addEventListener("mouseup", function(e) {
 
-	            }, false);
-	        }
+	            if (!mousedown) {
+	                return;
+	            }
+
+	            scroller.doTouchEnd(e.timeStamp);
+	            mousedown = false;
+
+	        }, false);
+
 	    }
 
 	    function disconnect(){
@@ -596,7 +605,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return {
 	        disconnect: disconnect,
-	        setDimensions: setDimensions
+	        setDimensions: setDimensions,
+	        scrollTo: scrollTo
 	    }
 	}
 

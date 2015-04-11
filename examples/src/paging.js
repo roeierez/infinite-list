@@ -19,8 +19,9 @@ var InfiniteList = require('../../src/InfiniteList'),
             }, 2000)
         },
 
-        hasMore: true,
-
-        itemsCount: 10
+        initialPage: {
+            hasMore: true,
+            itemsCount: 10
+        }
 
     }).attach(document.getElementById('main'));

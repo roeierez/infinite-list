@@ -39,6 +39,11 @@ var InfiniteList = function (listConfig) {
             config[key] = listConfig[key];
         }
     }
+    var initialPageConfig = listConfig.initialPage;
+    if (initialPageConfig){
+        config.itemsCount = initialPageConfig.itemsCount || 0;
+        config.hasMore = initialPageConfig.hasMore || false;
+    }
 
     function attach(domElement, touchProvider){
         parentElement = domElement;
