@@ -69,6 +69,7 @@ config has the following properties:
 
 #### initialPage
 the initial page configuration, has two properties:
+
     1. itemsCount [Number] - The number of items in the list.
     2. hasMore [Boolean] - True if we have more items to load (paging)
 
