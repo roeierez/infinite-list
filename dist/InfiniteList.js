@@ -577,7 +577,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return {
 	        disconnect: disconnect,
-	        setDimensions: setDimensions
+	        setDimensions: setDimensions,
+	        scrollTo: scrollTo
 	    }
 	}
 

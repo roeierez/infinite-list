@@ -90,7 +90,8 @@ var TouchScroller = function(parentElement, callback, givenTouchProvider){
 
     return {
         disconnect: disconnect,
-        setDimensions: setDimensions
+        setDimensions: setDimensions,
+        scrollTo: scrollTo
     }
 }
 
