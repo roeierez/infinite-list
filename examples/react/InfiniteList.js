@@ -102,6 +102,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            config[key] = listConfig[key];
 	        }
 	    }
+	    var initialPageConfig = listConfig.initialPage;
+	    if (initialPageConfig){
+	        config.itemsCount = initialPageConfig.itemsCount || 0;
+	        config.hasMore = initialPageConfig.hasMore || false;
+	    }
 
 	    function attach(domElement, touchProvider){
 	        parentElement = domElement;
@@ -224,6 +229,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function refresh(){
+	        StyleHelpers.applyElementStyle(rootElement, {
+	            height: parentElement.clientHeight + 'px',
+	            width: parentElement.clientWidth + 'px'
+	        });
+
 	        renderedListItems.forEach(function(layer){
 	            layersPool.addLayer(layer, true)
 	        });
@@ -577,7 +587,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return {
 	        disconnect: disconnect,
-	        setDimensions: setDimensions
+	        setDimensions: setDimensions,
+	        scrollTo: scrollTo
 	    }
 	}
 
