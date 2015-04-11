@@ -41,7 +41,9 @@ These techniques are used in this implementation too, but in order to achieve sm
 
 var infiniteList = new InfiniteList(
   {
-    itemsCount: 100000,
+    initialPage: {
+      itemsCount: 100000
+    },
     itemRenderer: function(domElement, index){
       domElement.innerHTML = <span class="pl-s"><span class="pl-pds">"</span>Item <span class="pl-pds">"</span></span> + index<span class="pl-k">;</span>
     },
@@ -99,14 +101,11 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 config has the following properties:</p>
 
 <h4>
-<a id="itemscount-number" class="anchor" href="#itemscount-number" aria-hidden="true"><span class="octicon octicon-link"></span></a>itemsCount [Number]</h4>
+<a id="initialpage" class="anchor" href="#initialpage" aria-hidden="true"><span class="octicon octicon-link"></span></a>initialPage</h4>
 
-<p>The number of items in the list</p>
-
-<h4>
-<a id="hasmore-boolean" class="anchor" href="#hasmore-boolean" aria-hidden="true"><span class="octicon octicon-link"></span></a>hasMore [Boolean]</h4>
-
-<p>True if we have more items to load (paging)</p>
+<p>the initial page configuration, has two properties:
+    1. itemsCount [Number] - The number of items in the list.
+    2. hasMore [Boolean] - True if we have more items to load (paging)</p>
 
 <h4>
 <a id="function-itemrendererdomelement-index" class="anchor" href="#function-itemrendererdomelement-index" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemRenderer(domElement, index)</h4>
@@ -133,7 +132,7 @@ config has the following properties:</p>
 
 <p>This method will be invoked when the list is scrolled to the end and 'hasMore' value is true.
 The list will render "Loading...' component and wait for the call back to return.
-The user should feed the callback with two paramters:</p>
+The user should feed the callback with two parameters:</p>
 
 <ul>
 <li>pageItemsCount - the number of items loaded in this page</li>
