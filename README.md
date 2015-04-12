@@ -60,6 +60,15 @@ npm install infinite-list
 ### bower
 bower install infinite-list
 
+## Examples
+to build the exapmles:
+```
+  npm update
+  cd examples
+  webpack
+```
+and you have the example files under "build" directory.
+
 ## API
 
 ### constructor (config)
