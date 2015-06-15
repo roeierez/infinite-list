@@ -2,10 +2,10 @@
 
 A 60fps infinite scrollable list for mobile devices.
 There are some implementation of infinite scrolling out there.
-The best of them renders to the DOM only what the user sees onin screen at a give time and use GPU accelration for translating items.
+The best of them renders to the DOM only what the user sees on screen at a give time and use GPU acceleration for translating items.
 These techniques are used in this implementation too, but in order to achieve smooth scrolling in a list with complex items with complex DOM, or when the user scrolls fast even on old devices they are not enough.
 
-In addition this list impements the following:
+In addition this list implements the following:
 1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
 2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
 3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.
@@ -37,7 +37,7 @@ Later on when this item becomes invisible because of scrolling action, for examp
 The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.
 
 ## Installation
-infinite-list uses a Universal Module Definition do you can use it with both CommonJS and RequireJS.
+infinite-list uses a Universal Module Definition so you can use it with both CommonJS and RequireJS.
 
 ### CommonJS
 ```
