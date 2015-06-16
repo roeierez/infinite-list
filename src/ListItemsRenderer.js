@@ -1,7 +1,7 @@
 var Layer = require('./Layer'),
     LayersPool = require('./layerPool'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
-    MIN_FPS = 30,
+    MIN_FPS = 20,
     DEFAULT_ITEM_HEIGHT = 40;
 
 var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pageCallback){
@@ -10,16 +10,23 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         itemWidth = attachedElement.clientWidth,
         renderedListItems = [],
         itemsNeedRerender = [],
-        accumulatedRowHeights = calculateHeights(),
         layersPool = new LayersPool();
 
-    function render(topOffset){
-        var topVisibleIndex = getFirstVisibleItemAtHeight(topOffset),
-            bottomVisibleIndex = getFirstVisibleItemAtHeight(topOffset + visibleHeight);
+    function render(topOffset, accumulatedRowHeights){
+        var topVisibleIndex = getFirstVisibleItemAtHeight(accumulatedRowHeights, topOffset),
+            bottomVisibleIndex = getFirstVisibleItemAtHeight(accumulatedRowHeights, topOffset + visibleHeight);
 
         if (!listConfig.hasMore){
             bottomVisibleIndex = Math.min(bottomVisibleIndex, listConfig.itemsCount - 1);
         }
+
+        //fix offset if needed
+        for (var i=0; i<renderedListItems.length; ++i){
+            if (renderedListItems[i].getItemOffset() != accumulatedRowHeights[renderedListItems[i].getItemIndex()]) {
+                renderedListItems[i].setItemOffset(accumulatedRowHeights[renderedListItems[i].getItemIndex()]);
+            }
+        }
+
         //remove non-visible layers from top and push them to layerPool
         while (renderedListItems.length > 0 && renderedListItems[0].getItemIndex() < topVisibleIndex) {
             layersPool.addLayer(renderedListItems.shift());
@@ -69,7 +76,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
 
         if (bottomVisibleIndex > listConfig.itemsCount - 1){
-            renderLoadMore();
+            renderLoadMore(accumulatedRowHeights);
         }
         return (indicesForRerender.length > 0);
     }
@@ -90,7 +97,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         return layer;
     }
 
-    function renderLoadMore(){
+    function renderLoadMore(accumulatedRowHeights){
         if (renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
             var loadMoreLayer = pushLayerAtIndex(renderedListItems, listConfig.itemsCount, accumulatedRowHeights[listConfig.itemsCount], '$LoadMore', -1);
             listConfig.loadMoreRenderer(listConfig.itemsCount, loadMoreLayer.getDomElement());
@@ -98,7 +105,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
     }
 
-    function getFirstVisibleItemAtHeight(top) {
+    function getFirstVisibleItemAtHeight(accumulatedRowHeights, top) {
         var i = 0;
 
         while (i < listConfig.itemsCount && accumulatedRowHeights[i + 1] < top) {
@@ -114,25 +121,20 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
             layersPool.addLayer(layer, true)
         });
         renderedListItems = [];
-        accumulatedRowHeights = calculateHeights();
     }
 
     function isBusy(){
         return AnimationFrameHelper.getFPS() < MIN_FPS;
     }
 
-    function calculateHeights() {
-        var heights = [0];
-        for (var i = 1; i <= listConfig.itemsCount || 0; ++i) {
-            var currentRowHeight = listConfig.itemHeightGetter ? listConfig.itemHeightGetter(i - 1) : DEFAULT_ITEM_HEIGHT;
-            heights[i] = heights[i - 1] + currentRowHeight;
-        }
-        return heights;
-    }
+   function getRenderedItems(){
+       return renderedListItems;
+   }
 
     return {
         render: render,
-        refresh: refresh
+        refresh: refresh,
+        getRenderedItems: getRenderedItems
     };
 };
 

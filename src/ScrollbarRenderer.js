@@ -2,8 +2,7 @@ var StyleHelpers = require('./StyleHelpers');
 
 var ScrollbarRenderer = function(rootElement){
     var scrollbar = document.createElement('div'),
-        attachedElement = rootElement.parentElement,
-        clientHeight = attachedElement.clientHeight;
+        clientHeight = rootElement.parentElement.clientHeight;
 
     StyleHelpers.applyElementStyle(scrollbar, {
         position: 'absolute',
@@ -28,8 +27,13 @@ var ScrollbarRenderer = function(rootElement){
         StyleHelpers.applyTransformStyle(scrollbar, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)');
     }
 
+    function refresh(){
+        clientHeight = rootElement.parentElement.clientHeight;
+    }
+
     return {
-        render: render
+        render: render,
+        refresh: refresh
     }
 };
 

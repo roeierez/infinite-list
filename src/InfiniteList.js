@@ -120,6 +120,7 @@ var InfiniteList = function (listConfig) {
         itemsRenderer.refresh();
         calculateHeights();
         updateScrollerDimentions(parentElement);
+        scrollbarRenderer.refresh();
         needsRender = true;
     }
 
@@ -130,7 +131,7 @@ var InfiniteList = function (listConfig) {
     function render() {
         StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
         scrollbarRenderer.render(topOffset, getListHeight());
-        needsRender = itemsRenderer.render(topOffset);
+        needsRender = itemsRenderer.render(topOffset, accumulatedRowHeights);
     }
 
     function loadMoreCallback(){
@@ -145,11 +146,30 @@ var InfiniteList = function (listConfig) {
         scroller.scrollTo(0, accumulatedRowHeights[index], animate);
     }
 
+    function itemHeightChangedAtIndex(index){
+        var renderedItems = itemsRenderer.getRenderedItems(),
+            firstItem = renderedItems.length > 0 && renderedItems[0],
+            newHeight = config.itemHeightGetter(index),
+            oldHeight = accumulatedRowHeights[index + 1] - accumulatedRowHeights[index],
+            delta = newHeight -  oldHeight;
+
+        for (var i=index + 1; i<accumulatedRowHeights.length; ++i) {
+            accumulatedRowHeights[i] += delta;
+        }
+        updateScrollerDimentions(parentElement);
+
+        needsRender = true;
+        if (firstItem && index <= firstItem.getItemIndex() ) {
+            scroller.changeScrollPosition(topOffset + delta);
+        }
+    }
+
     return {
         attach: attach,
         detach: detach,
         scrollToItem: scrollToItem,
-        refresh: refresh
+        refresh: refresh,
+        itemHeightChangedAtIndex: itemHeightChangedAtIndex
     }
 
 };
