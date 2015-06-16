@@ -1,5 +1,7 @@
 # InfiniteList
 
+<p>See <a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Live demo</a> from your mobile device.</p>
+
 A 60fps infinite scrollable list for mobile devices.
 There are some implementation of infinite scrolling out there.
 The best of them renders to the DOM only what the user sees on screen at a give time and use GPU acceleration for translating items.
@@ -9,8 +11,6 @@ In addition this list implements the following:
 1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
 2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
 3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.
-
-<p>See <a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Live demo</a> from your mobile device.</p>
 
 ## Quick Start
 
