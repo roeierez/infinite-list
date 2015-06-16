@@ -22,6 +22,8 @@
       <h1>
 <a id="infinitelist" class="anchor" href="#infinitelist" aria-hidden="true"><span class="octicon octicon-link"></span></a>InfiniteList</h1>
 
+<p>See <a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Live demo</a> from your mobile device.</p>
+
 <p>A 60fps infinite scrollable list for mobile devices.
 There are some implementation of infinite scrolling out there.
 The best of them renders to the DOM only what the user sees on screen at a give time and use GPU acceleration for translating items.
@@ -31,8 +33,6 @@ These techniques are used in this implementation too, but in order to achieve sm
 1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
 2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
 3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.</p>
-
-<p>See <a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Live demo</a> from your mobile device.</p>
 
 <h2>
 <a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
@@ -164,6 +164,13 @@ The user should feed the callback with two parameters:</p>
 <p>A function that tells the list to render again the items that are visible to the user.
 This is usually used when the user has changed the data of the list and wants to refresh the UI.</p>
 
+<h2>
+<a id="roadmap" class="anchor" href="#roadmap" aria-hidden="true"><span class="octicon octicon-link"></span></a>Roadmap</h2>
+
+<ul>
+<li>Support Auto-detect height of list items. This means that passing 'itemHeightGetter' will be optional and the list will detect the height after the items is rendered. It requires a bit refactoring and changing the scroller but I expect it to be in a couple of weeks from now.</li>
+</ul>
+
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/roeierez/infinite-list">Infinite-list</a> is maintained by <a href="https://github.com/roeierez">roeierez</a>.</span>
 
@@ -175,3 +182,4 @@ This is usually used when the user has changed the data of the list and wants to
   
   </body>
 </html>
+
