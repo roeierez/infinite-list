@@ -109,3 +109,7 @@ A function that receive the index of item and scroll the list to that item posit
 
 A function that tells the list to render again the items that are visible to the user.
 This is usually used when the user has changed the data of the list and wants to refresh the UI.
+
+## Roadmap
+
+* Support Auto-detect height of list items. This means that passing 'itemHeightGetter' will be optional and the list will detect the height after the items is rendered. It requires a bit refactoring and changing the scroller but I expect it to be in a couple of weeks from now.
