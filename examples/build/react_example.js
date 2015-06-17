@@ -83,8 +83,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var list = new InfiniteList({
 
 	    itemHeightGetter: function(index){
-	        //return 320 + ( (index == 1) ? (pageNum *100) : 0);
-	        return heights[index] || 50;
+	        return (heights[index] + 30) || 200;
 	    },
 
 	    itemRenderer: function(index, domElement){
@@ -101,7 +100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        setTimeout(function(){
 	            callback(10, true);
-	        }, 500);
+	        }, 2000);
 	    },
 
 	    initialPage: {
@@ -111,7 +110,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 	list.attach(document.getElementById('main'));
-	list.scrollToItem(7);
+	setTimeout(function(){
+	    list.scrollToItem(40);
+	},4000);
+
 
 
 /***/ },
@@ -119,10 +121,11 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var TouchScroller = __webpack_require__(7),
-	    ScrollbarRenderer = __webpack_require__(8),
-	    AnimationFrameHelper = __webpack_require__(9),
-	    ListItemsRenderer = __webpack_require__(10),
-	    StyleHelpers = __webpack_require__(11);
+	    VerticalScroller = __webpack_require__(8),
+	    ScrollbarRenderer = __webpack_require__(9),
+	    AnimationFrameHelper = __webpack_require__(10),
+	    ListItemsRenderer = __webpack_require__(11),
+	    StyleHelpers = __webpack_require__(12);
 	    DEFAULT_ITEM_HEIGHT = 40;
 
 	var InfiniteList = function (listConfig) {
@@ -165,9 +168,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        initializeRootElement(domElement);
 	        scrollbarRenderer = new ScrollbarRenderer(rootElement);
 	        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
-	        scroller = new TouchScroller(
+	        scroller = new VerticalScroller(
 	            parentElement,
-	            function (left, top) {
+	            function (top) {
 	                topOffset = top || 0;
 	                needsRender = true;
 	            },
@@ -225,10 +228,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function updateScrollerDimentions(parentElement){
 
 	        scroller.setDimensions(
-	            parentElement.clientWidth,
-	            parentElement.clientHeight,
-	            parentElement.clientWidth,
-	            getListHeight()
+	            getListHeight(),
+	            parentElement.clientHeight
 	        );
 	    }
 
@@ -263,7 +264,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function scrollToItem(index, animate) {
-	        scroller.scrollTo(0, accumulatedRowHeights[index], animate);
+	        scroller.scrollTo(accumulatedRowHeights[index], animate);
 	    }
 
 	    function itemHeightChangedAtIndex(index){
@@ -344,7 +345,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Scroller = __webpack_require__(14);
+	var Scroller = __webpack_require__(15);
 
 	var TouchScroller = function(parentElement, callback, givenTouchProvider){
 
@@ -452,7 +453,144 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var StyleHelpers = __webpack_require__(11);
+	var SCROLLING_TIME_CONSTANT = 250;
+
+	var VerticalScroller = function (parentElement, callback) {
+
+	    var timestamp = 0,
+	        scrollerHeight = 0,
+	        scrollerViewHeight = 0,
+	        frame = 0,
+	        velocity = 0,
+	        amplitude = 0,
+	        pressed = 0,
+	        ticker = 0,
+	        reference = 0,
+	        offset = 0,
+	        target = 0;
+
+	    parentElement.addEventListener('touchstart', tap);
+	    parentElement.addEventListener('touchmove', drag);
+	    parentElement.addEventListener('touchend', release);
+	    parentElement.addEventListener('mousedown', tap);
+	    parentElement.addEventListener('mousemove', drag);
+	    parentElement.addEventListener('mouseup', release);
+
+	    function ypos (e) {
+	        // touch event
+	        if (e.targetTouches && (e.targetTouches.length >= 1)) {
+	            return e.targetTouches[0].clientY;
+	        }
+
+	        // mouse event
+	        return e.clientY;
+	    }
+
+	    function track () {
+	        var now, elapsed, delta, v;
+
+	        now = Date.now();
+	        elapsed = now - timestamp;
+	        timestamp = now;
+	        delta = offset - frame;
+	        frame = offset;
+
+	        v = 1000 * delta / (1 + elapsed);
+	        velocity = 0.8 * v + 0.2 * velocity;
+	    }
+
+	    function scroll (y){
+	        offset = Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
+	        callback(offset);
+	    }
+
+	    function autoScroll () {
+	        var elapsed, delta;
+
+	        if (amplitude) {
+	            elapsed = Date.now() - timestamp;
+	            delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
+	            if (delta > 10 || delta < -10) {
+	                scroll(target - delta);
+	                requestAnimationFrame(autoScroll);
+	            } else {
+	                scroll(target);
+	            }
+	        }
+	    }
+
+	    function tap (e) {
+	        pressed = true;
+	        reference = ypos(e);
+
+	        velocity = amplitude = 0;
+	        frame = offset;
+	        timestamp = Date.now();
+	        clearInterval(ticker);
+	        ticker = setInterval(track, 10);
+
+	        e.preventDefault();
+	        e.stopPropagation();
+	    }
+
+	    function drag (e) {
+	        var y, delta;
+	        if (pressed) {
+	            y = ypos(e);
+	            delta = reference - y;
+	            if (delta > 2 || delta < -2) {
+	                reference = y;
+	                scroll(offset + delta);
+	            }
+	        }
+	        e.preventDefault();
+	        e.stopPropagation();
+	    }setDimensions
+	    function release (e) {
+	        pressed = false;
+
+	        clearInterval(ticker);
+
+	        if (velocity > 10 || velocity < -10) {
+	            amplitude = 0.8 * velocity;
+	            target = Math.round(offset + amplitude);
+	            timestamp = Date.now();
+	            requestAnimationFrame(autoScroll);
+	        }
+
+	        e.preventDefault();
+	        e.stopPropagation();
+	    }
+
+	    function scrollTo(y){
+	        amplitude = 0;
+	        scroll(y);
+	    }
+
+	    function changeScrollPosition (y) {
+	        scroll(y);
+	    }
+
+	    function setDimensions(height, viewHeight){
+	        scrollerHeight = height;
+	        scrollerViewHeight = viewHeight;
+	    }
+
+	    return {
+	        setDimensions: setDimensions,
+	        scrollTo: scrollTo,
+	        changeScrollPosition: changeScrollPosition
+	    }
+	};
+
+	module.exports = VerticalScroller;
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var StyleHelpers = __webpack_require__(12);
 
 	var ScrollbarRenderer = function(rootElement){
 	    var scrollbar = document.createElement('div'),
@@ -496,7 +634,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -539,12 +677,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Layer = __webpack_require__(12),
-	    LayersPool = __webpack_require__(13),
-	    AnimationFrameHelper = __webpack_require__(9),
+	var Layer = __webpack_require__(13),
+	    LayersPool = __webpack_require__(14),
+	    AnimationFrameHelper = __webpack_require__(10),
 	    MIN_FPS = 20,
 	    DEFAULT_ITEM_HEIGHT = 40;
 
@@ -686,7 +824,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -714,10 +852,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var StyleHelpers = __webpack_require__(11);
+	var StyleHelpers = __webpack_require__(12);
 
 	var Layer = function (parentElement) {
 	    var listItemElement = null,
@@ -784,10 +922,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var StyleHelpers = __webpack_require__(11),
+	var StyleHelpers = __webpack_require__(12),
 	    LayersPool = function () {
 	        var layersByIdentifier = {};
 
@@ -824,7 +962,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -842,7 +980,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	var Scroller;
-	var core = __webpack_require__(15);
+	var core = __webpack_require__(16);
 
 	(function() {
 		
@@ -2111,7 +2249,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*

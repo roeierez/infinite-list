@@ -17,8 +17,7 @@ var pageNum = 0,
 var list = new InfiniteList({
 
     itemHeightGetter: function(index){
-        //return 320 + ( (index == 1) ? (pageNum *100) : 0);
-        return heights[index] || 50;
+        return (heights[index] + 30) || 200;
     },
 
     itemRenderer: function(index, domElement){
@@ -35,7 +34,7 @@ var list = new InfiniteList({
 
         setTimeout(function(){
             callback(10, true);
-        }, 500);
+        }, 2000);
     },
 
     initialPage: {
@@ -45,4 +44,7 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
-list.scrollToItem(7);
+setTimeout(function(){
+    list.scrollToItem(40);
+},4000);
+

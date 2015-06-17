@@ -1,4 +1,5 @@
 var TouchScroller = require('./TouchScroller'),
+    VerticalScroller = require('./VerticalScroller'),
     ScrollbarRenderer = require('./ScrollbarRenderer'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     ListItemsRenderer = require('./ListItemsRenderer'),
@@ -45,9 +46,9 @@ var InfiniteList = function (listConfig) {
         initializeRootElement(domElement);
         scrollbarRenderer = new ScrollbarRenderer(rootElement);
         itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
-        scroller = new TouchScroller(
+        scroller = new VerticalScroller(
             parentElement,
-            function (left, top) {
+            function (top) {
                 topOffset = top || 0;
                 needsRender = true;
             },
@@ -105,10 +106,8 @@ var InfiniteList = function (listConfig) {
     function updateScrollerDimentions(parentElement){
 
         scroller.setDimensions(
-            parentElement.clientWidth,
-            parentElement.clientHeight,
-            parentElement.clientWidth,
-            getListHeight()
+            getListHeight(),
+            parentElement.clientHeight
         );
     }
 
@@ -143,7 +142,7 @@ var InfiniteList = function (listConfig) {
     }
 
     function scrollToItem(index, animate) {
-        scroller.scrollTo(0, accumulatedRowHeights[index], animate);
+        scroller.scrollTo(accumulatedRowHeights[index], animate);
     }
 
     function itemHeightChangedAtIndex(index){
