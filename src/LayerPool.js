@@ -8,7 +8,7 @@ var StyleHelpers = require('./StyleHelpers'),
                 layersByIdentifier[layerIdentifier] = [];
             }
             layersByIdentifier[layerIdentifier].push(layer);
-            layer.setItemOffset(-10000);
+           // layer.setItemOffset(-10000);
             if (hide){
                 StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
             }

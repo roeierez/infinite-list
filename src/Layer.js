@@ -4,18 +4,22 @@ var Layer = function (parentElement) {
     var listItemElement = null,
         identifier = "",
         currentOffset = -1,
-        itemIndex = -1;
+        itemIndex = -1,
+        itemHeight = 0;
 
     listItemElement = createListItemWrapperElement();
     parentElement.appendChild(listItemElement);
 
-    function attach(index, topOffset, width, height, itemIdentifier) {
+    function attach(index, width, height, itemIdentifier) {
         itemIndex = index;
+        itemHeight = height;
         StyleHelpers.applyElementStyle(listItemElement, {
             width: width + 'px',
-            height: (height || DEFAULT_ITEM_HEIGHT) + 'px'
+            height: height + 'px',
+            overflow: 'hidden'
         });
-        setItemOffset(topOffset);
+        itemHeight = height;
+       // setItemOffset(topOffset);
         identifier = itemIdentifier;
         return this;
     }
@@ -37,8 +41,13 @@ var Layer = function (parentElement) {
     }
 
     function setItemOffset(offset){
+        console.error("setItemOffset");
         StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + offset + ', 0, 1)');
         currentOffset = offset;
+    }
+
+    function getItemHeight() {
+        return itemHeight || (itemHeight = getDomElement().clientHeight);
     }
 
     function createListItemWrapperElement() {
@@ -57,6 +66,7 @@ var Layer = function (parentElement) {
         getDomElement: getDomElement,
         getItemOffset: getItemOffset,
         setItemOffset: setItemOffset,
+        getItemHeight: getItemHeight,
         getIdentifier: getIdentifier
     }
 };

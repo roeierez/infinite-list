@@ -16,14 +16,15 @@ var pageNum = 0,
 
 var list = new InfiniteList({
 
-    itemHeightGetter: function(index){
-        return (heights[index] + 30) || 200;
-    },
+    //itemHeightGetter: function(index){
+    //   // return (heights[index] && (heights[index] + 30)) || 0;
+    //    return 300;
+    //},
 
     itemRenderer: function(index, domElement){
         var el = React.render(React.createElement(template, listData[index]), domElement);
         heights[index] = el.getDOMNode().clientHeight;
-        list.itemHeightChangedAtIndex(index);
+       // list.itemHeightChangedAtIndex(index);
     },
 
     pageFetcher: function(fromIndex, callback){
@@ -33,18 +34,19 @@ var list = new InfiniteList({
         }
 
         setTimeout(function(){
-            callback(10, true);
+            callback(30, true);
         }, 2000);
     },
 
     initialPage: {
         hasMore: true,
-        itemsCount: 100
+        itemsCount: 30
     }
 
 });
 list.attach(document.getElementById('main'));
 setTimeout(function(){
-    list.scrollToItem(40);
-},4000);
+   // list.scrollToItem(25);
+    //list.refresh();
+},5000);
 

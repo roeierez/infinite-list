@@ -4,6 +4,7 @@ var VerticalScroller = function (parentElement, callback) {
 
     var timestamp = 0,
         scrollerHeight = 0,
+        startOffset = 0,
         scrollerViewHeight = 0,
         frame = 0,
         velocity = 0,
@@ -45,7 +46,7 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function scroll (y){
-        offset = Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
+        offset = Math.max(startOffset, Math.min(scrollerHeight - scrollerViewHeight, y));// Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
         callback(offset);
     }
 
@@ -90,7 +91,7 @@ var VerticalScroller = function (parentElement, callback) {
         }
         e.preventDefault();
         e.stopPropagation();
-    }setDimensions
+    }
     function release (e) {
         pressed = false;
 
@@ -116,7 +117,10 @@ var VerticalScroller = function (parentElement, callback) {
         scroll(y);
     }
 
-    function setDimensions(height, viewHeight){
+    function setDimensions(initialOffset, height, viewHeight, addScrollOffset){
+        target += (addScrollOffset || 0);
+        offset += (addScrollOffset || 0);
+        startOffset = initialOffset;
         scrollerHeight = height;
         scrollerViewHeight = viewHeight;
     }

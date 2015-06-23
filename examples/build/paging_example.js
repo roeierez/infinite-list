@@ -124,8 +124,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scrollbarRenderer = null,
 	        itemsRenderer = null,
 	        scroller = null,
+	        offsetDelta = 5000,
 	        accumulatedRowHeights = [],
+	        adjustedItems = {},
 	        topOffset = 0,
+	        scrollToIndex = 0,
+	        topItemOffset = 0,
 	        needsRender = true;
 
 	    for (key in listConfig){
@@ -148,7 +152,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scroller = new VerticalScroller(
 	            parentElement,
 	            function (top) {
-	                topOffset = top || 0;
+	                topOffset = (top || 0);
 	                needsRender = true;
 	            },
 	            touchProvider
@@ -175,11 +179,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function calculateHeights() {
-	        accumulatedRowHeights = [0];
+	        accumulatedRowHeights = [offsetDelta];
 	        for (var i = 1; i <= config.itemsCount || 0; ++i) {
 	            var currentRowHeight = config.itemHeightGetter ? config.itemHeightGetter(i - 1) : DEFAULT_ITEM_HEIGHT;
 	            accumulatedRowHeights[i] = accumulatedRowHeights[i - 1] + currentRowHeight;
 	        }
+	        adjustedItems = {};
 	    }
 
 	    function initializeRootElement(parentElement) {
@@ -202,15 +207,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	            rootElement);
 	    };
 
-	    function updateScrollerDimentions(parentElement){
+	    function updateScrollerDimentions(parentElement, shiftScroller){
 
 	        scroller.setDimensions(
+	            offsetDelta,
 	            getListHeight(),
-	            parentElement.clientHeight
+	            parentElement.clientHeight,
+	            shiftScroller
 	        );
 	    }
 
 	    function refresh(){
+	        var topListItem = itemsRenderer.getRenderedItems()[0],
+	            topListItemIndex = topListItem && topListItem.getItemIndex() || 0,
+	            topItemStartsAt = getStartOffsetForIndex(topListItemIndex) || 0,
+	            differenceFromTop = topOffset - topItemStartsAt;
+
 	        StyleHelpers.applyElementStyle(rootElement, {
 	            height: parentElement.clientHeight + 'px',
 	            width: parentElement.clientWidth + 'px'
@@ -219,17 +231,74 @@ return /******/ (function(modules) { // webpackBootstrap
 	        calculateHeights();
 	        updateScrollerDimentions(parentElement);
 	        scrollbarRenderer.refresh();
-	        needsRender = true;
+	        scrollToItem(topListItemIndex, differenceFromTop);
 	    }
 
 	    function getListHeight(){
-	        return accumulatedRowHeights[accumulatedRowHeights.length - 1] + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT);
+	        return getStartOffsetForIndex(accumulatedRowHeights.length - 1) + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT);
 	    }
 
 	    function render() {
+	        var topItem = null,
+	            shiftTop = 0,
+	            bottomItem = null,
+	            shiftBottom = 0,
+	            scrollerNeedUpdate = false,
+	            renderedItems = [];
+
 	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        scrollbarRenderer.render(topOffset, getListHeight());
-	        needsRender = itemsRenderer.render(topOffset, accumulatedRowHeights);
+	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+	        renderedItems = itemsRenderer.getRenderedItems();
+
+
+	        if (renderedItems.length > 0) {
+	            topItem = renderedItems[0];
+	            bottomItem = renderedItems[renderedItems.length - 1];
+
+	            shiftTop = topItem.getItemOffset() - accumulatedRowHeights[topItem.getItemIndex()];
+	            if (shiftTop != 0) {
+	                scrollerNeedUpdate = true;
+	                for (var i = topItem.getItemIndex(); i >= 0; --i) {
+	                    accumulatedRowHeights[i] += shiftTop;
+	                }
+	            }
+
+	            if (accumulatedRowHeights.length > bottomItem.getItemIndex() + 1) {
+	                shiftBottom = bottomItem.getItemOffset() + bottomItem.getItemHeight() - accumulatedRowHeights[bottomItem.getItemIndex() + 1];
+	                if (shiftBottom != 0) {
+	                    scrollerNeedUpdate = true;
+	                    for (var i = bottomItem.getItemIndex() + 1; i < accumulatedRowHeights.length; ++i) {
+	                        accumulatedRowHeights[i] += shiftBottom;
+	                    }
+	                }
+	            }
+	        }
+
+	        for (var i = 1; i < renderedItems.length - 1; ++i) {
+	            accumulatedRowHeights[renderedItems[i].getItemIndex()] = renderedItems[i].getItemOffset();
+	        }
+
+	        var deltaToAdd = 0;
+	        if (accumulatedRowHeights[0] < 0) {
+	            deltaToAdd = Math.abs(accumulatedRowHeights[0]) + 5000;
+	            for (var i = 0; i< accumulatedRowHeights.length; ++i){
+	                accumulatedRowHeights[i] += deltaToAdd;
+	                offsetDelta + deltaToAdd;
+	            }
+
+	            renderedItems.forEach(function(item){
+	                item.setItemOffset(item.getItemOffset() + deltaToAdd);
+	            });
+	        }
+
+	        offsetDelta = accumulatedRowHeights[0];
+	        if (scrollerNeedUpdate) {
+	            updateScrollerDimentions(parentElement, deltaToAdd);
+	        }
+
+	        scrollToIndex = null;
+	        topItemOffset = null;
 	    }
 
 	    function loadMoreCallback(){
@@ -240,26 +309,37 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    }
 
-	    function scrollToItem(index, animate) {
-	        scroller.scrollTo(accumulatedRowHeights[index], animate);
+	    function scrollToItem(index, relativeOffset, animate) {
+	        topItemOffset = relativeOffset || 0;
+	        scrollToIndex = index;
+	        scroller.scrollTo(getStartOffsetForIndex(index), animate);
 	    }
 
-	    function itemHeightChangedAtIndex(index){
+	    function itemHeightChangedAtIndex(index, optionalNewHeight){
 	        var renderedItems = itemsRenderer.getRenderedItems(),
 	            firstItem = renderedItems.length > 0 && renderedItems[0],
-	            newHeight = config.itemHeightGetter(index),
-	            oldHeight = accumulatedRowHeights[index + 1] - accumulatedRowHeights[index],
+	            newHeight = optionalNewHeight || config.itemHeightGetter(index),
+	            oldHeight = getStartOffsetForIndex(index + 1) - getStartOffsetForIndex(index),
 	            delta = newHeight -  oldHeight;
 
-	        for (var i=index + 1; i<accumulatedRowHeights.length; ++i) {
-	            accumulatedRowHeights[i] += delta;
+	        //for (var i = index + 1; i<accumulatedRowHeights.length; ++i) {
+	        //    accumulatedRowHeights[i] += delta;
+	        //}
+
+	        for (var i= index; i >= 0; --i) {
+	            accumulatedRowHeights[i]-= delta;
 	        }
+
 	        updateScrollerDimentions(parentElement);
 
 	        needsRender = true;
 	        if (firstItem && index <= firstItem.getItemIndex() ) {
 	            scroller.changeScrollPosition(topOffset + delta);
 	        }
+	    }
+
+	    function getStartOffsetForIndex (index) {
+	        return accumulatedRowHeights[index];
 	    }
 
 	    return {
@@ -393,6 +473,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    var timestamp = 0,
 	        scrollerHeight = 0,
+	        startOffset = 0,
 	        scrollerViewHeight = 0,
 	        frame = 0,
 	        velocity = 0,
@@ -434,7 +515,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function scroll (y){
-	        offset = Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
+	        offset = Math.max(startOffset, Math.min(scrollerHeight - scrollerViewHeight, y));// Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
 	        callback(offset);
 	    }
 
@@ -479,7 +560,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        e.preventDefault();
 	        e.stopPropagation();
-	    }setDimensions
+	    }
 	    function release (e) {
 	        pressed = false;
 
@@ -505,7 +586,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scroll(y);
 	    }
 
-	    function setDimensions(height, viewHeight){
+	    function setDimensions(initialOffset, height, viewHeight, addScrollOffset){
+	        target += (addScrollOffset || 0);
+	        offset += (addScrollOffset || 0);
+	        startOffset = initialOffset;
 	        scrollerHeight = height;
 	        scrollerViewHeight = viewHeight;
 	    }
@@ -617,7 +701,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var Layer = __webpack_require__(13),
 	    LayersPool = __webpack_require__(14),
 	    AnimationFrameHelper = __webpack_require__(10),
-	    MIN_FPS = 20,
+	    MIN_FPS = 30,
+	    MAX_TIME_PER_FRAME = 1000 % MIN_FPS + 8000,
 	    DEFAULT_ITEM_HEIGHT = 40;
 
 	var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pageCallback){
@@ -625,82 +710,82 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var visibleHeight = attachedElement.clientHeight,
 	        itemWidth = attachedElement.clientWidth,
 	        renderedListItems = [],
-	        itemsNeedRerender = [],
 	        layersPool = new LayersPool();
 
-	    function render(topOffset, accumulatedRowHeights){
-	        var topVisibleIndex = getFirstVisibleItemAtHeight(accumulatedRowHeights, topOffset),
-	            bottomVisibleIndex = getFirstVisibleItemAtHeight(accumulatedRowHeights, topOffset + visibleHeight);
+	    function render(topOffset, atIndex, offsetFromTop){
+	        var startRenderTime = new Date().getTime();
 
-	        if (!listConfig.hasMore){
-	            bottomVisibleIndex = Math.min(bottomVisibleIndex, listConfig.itemsCount - 1);
+	        if ( typeof atIndex == 'number' &&  atIndex >= 0){
+	            while (renderedListItems.length > 0) {
+	                layersPool.addLayer(renderedListItems.pop());
+	            }
+
+	            var onlyRenderedItem = renderListItem(atIndex);
+	            onlyRenderedItem.setItemOffset(topOffset - (offsetFromTop || 0));
+	            renderedListItems.push(onlyRenderedItem);
 	        }
 
-	        //fix offset if needed
-	        for (var i=0; i<renderedListItems.length; ++i){
-	            if (renderedListItems[i].getItemOffset() != accumulatedRowHeights[renderedListItems[i].getItemIndex()]) {
-	                renderedListItems[i].setItemOffset(accumulatedRowHeights[renderedListItems[i].getItemIndex()]);
+
+	        var topRenderedItem = renderedListItems[0],
+	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+
+	        while (topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
+	            topRenderedItem = renderBefore(topRenderedItem);
+	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	                return true;
 	            }
 	        }
 
-	        //remove non-visible layers from top and push them to layerPool
-	        while (renderedListItems.length > 0 && renderedListItems[0].getItemIndex() < topVisibleIndex) {
+	        while (bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getIdentifier() != '$LoadMore') {
+	            bottomRenderedItem = renderAfter(bottomRenderedItem);
+	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	                return true;
+	            }
+	        }
+
+	        while (topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
 	            layersPool.addLayer(renderedListItems.shift());
+	            topRenderedItem = renderedListItems[0];
 	        }
 
-	        //remove non-visible layers from bottom and push them to layerPool
-	        while (renderedListItems.length > 0 && renderedListItems[renderedListItems.length - 1].getItemIndex() > bottomVisibleIndex) {
+	        while (bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
 	            layersPool.addLayer(renderedListItems.pop());
+	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        }
 
-	        var renderedStart = renderedListItems.length > 0 ? renderedListItems[0].getItemIndex() : (bottomVisibleIndex + 1),
-	            topItems = [];
+	        return false;
+	    }
 
-	        var systemBusyRenderer = function(index, domElement){
-	                domElement.innerHTML = "Loading...";
-	            },
-	            itemRendered = false,
-	            renderListItem = function(listItem){
-	                var renderBusy =  isBusy();
-	                var renderer = !renderBusy ? listConfig.itemRenderer : systemBusyRenderer;
-	                renderer(listItem.getItemIndex(), listItem.getDomElement());
-	                if (renderBusy){
-	                    itemsNeedRerender[listItem.getItemIndex()] = listItem;
-	                }
-	            }
+	    function renderBefore(listItem){
+	        var newItem = renderListItem(listItem.getItemIndex() - 1);
+	        newItem.setItemOffset(listItem.getItemOffset() - newItem.getItemHeight());
+	        renderedListItems.unshift(newItem);
+	        return newItem;
+	    }
 
-	        //fill the gaps on top
-	        for (var i = topVisibleIndex; i < renderedStart; ++i) {
-	            renderListItem(pushLayerAtIndex(topItems, i, accumulatedRowHeights[i]));
-	            itemRendered = true;
-	        }
-	        renderedListItems = topItems.concat(renderedListItems);
+	    function renderAfter(listItem){
+	        var newItem = renderListItem(listItem.getItemIndex() + 1);
+	        newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
+	        renderedListItems.push(newItem);
+	        return newItem;
+	    }
 
-	        //fill the gaps on bottom
-	        for (var i = renderedListItems[renderedListItems.length - 1].getItemIndex() + 1; i <= Math.min(listConfig.itemsCount - 1, bottomVisibleIndex); ++i) {
-	            renderListItem(pushLayerAtIndex(renderedListItems, i, accumulatedRowHeights[i]));
-	            itemRendered = true;
+	    function renderListItem (index) {
+	        if (index == listConfig.itemsCount) {
+	            return renderLoadMore();
 	        }
 
-	        var indicesForRerender = Object.keys(itemsNeedRerender);
-	        if (!itemRendered && !isBusy()){
-	            if (indicesForRerender.length > 0){
-	                var indexToRender = indicesForRerender.shift();
-	                listConfig.itemRenderer(itemsNeedRerender[indexToRender].getItemIndex(), itemsNeedRerender[indexToRender].getDomElement());
-	                delete itemsNeedRerender[indexToRender];
-	            }
-	        }
-
-	        if (bottomVisibleIndex > listConfig.itemsCount - 1){
-	            renderLoadMore(accumulatedRowHeights);
-	        }
-	        return (indicesForRerender.length > 0);
+	        var itemIdentifier = (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : ''),
+	            height = listConfig.itemHeightGetter && listConfig.itemHeightGetter(index),
+	            layer = borrowLayerForIndex(index, itemIdentifier, height);
+	        listConfig.itemRenderer(index, layer.getDomElement());
+	        return layer;
 	    }
 
 	    /*
 	     Borrow a layer from the LayersPool and attach it to a certain item at index.
 	     */
-	    function pushLayerAtIndex(listItems, index, offset, identifier, height) {
+	    function borrowLayerForIndex(index, identifier, height) {
 	        var layerIdentifier = identifier || (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : '');
 	        var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
 	        if (layer == null) {
@@ -708,26 +793,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        //index, topOffset, renderer, width, height, itemIdentifier
 	        var itemHeight = height || listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
-	        layer.attach(index, offset, itemWidth - 9, itemHeight, layerIdentifier);
-	        listItems.push(layer);
+	        layer.attach(index, itemWidth - 9, itemHeight, layerIdentifier);
+	        //listItems.push(layer);
 	        return layer;
 	    }
 
-	    function renderLoadMore(accumulatedRowHeights){
+	    function renderLoadMore(){
 	        if (renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
-	            var loadMoreLayer = pushLayerAtIndex(renderedListItems, listConfig.itemsCount, accumulatedRowHeights[listConfig.itemsCount], '$LoadMore', -1);
+	            var loadMoreLayer = borrowLayerForIndex(listConfig.itemsCount, '$LoadMore', -1);
 	            listConfig.loadMoreRenderer(listConfig.itemsCount, loadMoreLayer.getDomElement());
 	            pageCallback();
+	            return loadMoreLayer;
 	        }
-	    }
 
-	    function getFirstVisibleItemAtHeight(accumulatedRowHeights, top) {
-	        var i = 0;
-
-	        while (i < listConfig.itemsCount && accumulatedRowHeights[i + 1] < top) {
-	            i++;
-	        }
-	        return i;
+	        return renderedListItems[renderedListItems.length - 1];
 	    }
 
 	    function refresh(){
@@ -795,18 +874,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var listItemElement = null,
 	        identifier = "",
 	        currentOffset = -1,
-	        itemIndex = -1;
+	        itemIndex = -1,
+	        itemHeight = 0;
 
 	    listItemElement = createListItemWrapperElement();
 	    parentElement.appendChild(listItemElement);
 
-	    function attach(index, topOffset, width, height, itemIdentifier) {
+	    function attach(index, width, height, itemIdentifier) {
 	        itemIndex = index;
+	        itemHeight = height;
 	        StyleHelpers.applyElementStyle(listItemElement, {
 	            width: width + 'px',
-	            height: (height || DEFAULT_ITEM_HEIGHT) + 'px'
+	            height: height + 'px',
+	            overflow: 'hidden'
 	        });
-	        setItemOffset(topOffset);
+	        itemHeight = height;
+	       // setItemOffset(topOffset);
 	        identifier = itemIdentifier;
 	        return this;
 	    }
@@ -828,8 +911,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function setItemOffset(offset){
+	        console.error("setItemOffset");
 	        StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + offset + ', 0, 1)');
 	        currentOffset = offset;
+	    }
+
+	    function getItemHeight() {
+	        return itemHeight || (itemHeight = getDomElement().clientHeight);
 	    }
 
 	    function createListItemWrapperElement() {
@@ -848,6 +936,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        getDomElement: getDomElement,
 	        getItemOffset: getItemOffset,
 	        setItemOffset: setItemOffset,
+	        getItemHeight: getItemHeight,
 	        getIdentifier: getIdentifier
 	    }
 	};
@@ -869,7 +958,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                layersByIdentifier[layerIdentifier] = [];
 	            }
 	            layersByIdentifier[layerIdentifier].push(layer);
-	            layer.setItemOffset(-10000);
+	           // layer.setItemOffset(-10000);
 	            if (hide){
 	                StyleHelpers.applyElementStyle(layer.getDomElement(), {display: 'none'})
 	            }
