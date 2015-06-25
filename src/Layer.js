@@ -41,7 +41,6 @@ var Layer = function (parentElement) {
     }
 
     function setItemOffset(offset){
-        console.error("setItemOffset");
         StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + offset + ', 0, 1)');
         currentOffset = offset;
     }

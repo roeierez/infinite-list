@@ -16,14 +16,14 @@ var pageNum = 0,
 
 var list = new InfiniteList({
 
-    //itemHeightGetter: function(index){
-    //   // return (heights[index] && (heights[index] + 30)) || 0;
-    //    return 300;
-    //},
+    itemHeightGetter: function(index){
+        return (heights[index]) || 300;
+       // return 300;
+    },
 
     itemRenderer: function(index, domElement){
         var el = React.render(React.createElement(template, listData[index]), domElement);
-        heights[index] = el.getDOMNode().clientHeight;
+      //  heights[index] = el.getDOMNode().clientHeight;
        // list.itemHeightChangedAtIndex(index);
     },
 
@@ -34,19 +34,25 @@ var list = new InfiniteList({
         }
 
         setTimeout(function(){
-            callback(30, true);
+            callback(10, true);
         }, 2000);
     },
 
     initialPage: {
         hasMore: true,
-        itemsCount: 30
+        itemsCount: 10
     }
 
 });
 list.attach(document.getElementById('main'));
-setTimeout(function(){
-   // list.scrollToItem(25);
-    //list.refresh();
-},5000);
+//setTimeout(function(){
+//    heights[1] = 500;
+//    list.refreshItemHeight(1);
+//    //list.scrollToItem(4);
+//    //setTimeout(function(){
+//    //    var pos = list.getPosition();
+//    //    list.scrollTo(pos - 309 * 2 );
+//    //}, 2000);
+//    //list.refresh();
+//},3000);
 

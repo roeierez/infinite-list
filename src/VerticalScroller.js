@@ -46,7 +46,8 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function scroll (y){
-        offset = Math.max(startOffset, Math.min(scrollerHeight - scrollerViewHeight, y));// Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
+        offset = Math.min(scrollerHeight - scrollerViewHeight, y);
+        //offset = Math.max(startOffset, Math.min(scrollerHeight - scrollerViewHeight, y));// Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
         callback(offset);
     }
 

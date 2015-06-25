@@ -2,8 +2,7 @@ var Layer = require('./Layer'),
     LayersPool = require('./layerPool'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     MIN_FPS = 30,
-    MAX_TIME_PER_FRAME = 1000 % MIN_FPS + 8000,
-    DEFAULT_ITEM_HEIGHT = 40;
+    MAX_TIME_PER_FRAME = 1000 % MIN_FPS;
 
 var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pageCallback){
 
