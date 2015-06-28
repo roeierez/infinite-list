@@ -111,8 +111,9 @@ var InfiniteList = function (listConfig) {
 
     function updateScrollerDimentions(){
 
+        var firstRenderedItem = itemsRenderer.getRenderedItems()[0];
         scroller.setDimensions(
-            offsetDelta,
+            !firstRenderedItem || firstRenderedItem.getItemIndex() == 0 ? listItemsOffsets[0] : Number.MIN_SAFE_INTEGER,
             getListHeight(),
             parentElementHeight
         );
@@ -148,8 +149,8 @@ var InfiniteList = function (listConfig) {
             scrollerNeedUpdate = false,
             renderedItems = itemsRenderer.getRenderedItems();
 
-        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
-            if (topOffset < renderedItems[0].getItemOffset()) {
+        if (renderedItems.length > 0) {
+            if (renderedItems[0].getItemIndex() == 0 && topOffset < renderedItems[0].getItemOffset()) {
                 topOffset = renderedItems[0].getItemOffset();
                 scroller.scrollTo(topOffset);
                 return;
@@ -165,28 +166,8 @@ var InfiniteList = function (listConfig) {
             topItem = renderedItems[0];
             bottomItem = renderedItems[renderedItems.length - 1];
 
-            //shiftItemOffsetIfNeeded(topItem.getItemIndex(), topItem.getItemOffset());
-            //shiftItemOffsetIfNeeded(bottomItem.getItemIndex() + 1, bottomItem.getItemOffset() + bottomItem.getItemHeight());
-
-            //shiftTop(topItem.getItemIndex(), topItem.getItemOffset());
-            shiftTop = topItem.getItemOffset() - listItemsOffsets[topItem.getItemIndex()];
-            if (shiftTop != 0) {
-                scrollerNeedUpdate = true;
-                for (var i = topItem.getItemIndex(); i >= 0; --i) {
-                    listItemsOffsets[i] += shiftTop;
-                }
-            }
-
-            if (listItemsOffsets.length > bottomItem.getItemIndex() + 1) {
-               // shiftBottom(bottomItem.getItemIndex() + 1, bottomItem.getItemOffset() + bottomItem.getItemHeight());
-                shiftBottom = bottomItem.getItemOffset() + bottomItem.getItemHeight() - listItemsOffsets[bottomItem.getItemIndex() + 1];
-                if (shiftBottom != 0) {
-                    scrollerNeedUpdate = true;
-                    for (var i = bottomItem.getItemIndex() + 1; i < listItemsOffsets.length; ++i) {
-                        listItemsOffsets[i] += shiftBottom;
-                    }
-                }
-            }
+            shiftItemOffsetIfNeeded(topItem.getItemIndex(), topItem.getItemOffset());
+            shiftItemOffsetIfNeeded(bottomItem.getItemIndex() + 1, bottomItem.getItemOffset() + bottomItem.getItemHeight());
         }
 
         for (var i = 1; i < renderedItems.length - 1; ++i) {
@@ -216,27 +197,20 @@ var InfiniteList = function (listConfig) {
     }
 
     function refreshItemHeight(index){
-        var renderedItems = itemsRenderer.getRenderedItems(),
-            firstItem = renderedItems.length > 0 && renderedItems[0],
-            newHeight = config.itemHeightGetter(index),
-            oldHeight = getStartOffsetForIndex(index + 1) - getStartOffsetForIndex(index),
-            delta = newHeight -  oldHeight;
 
-        //for (var i = index + 1; i<accumulatedRowHeights.length; ++i) {
-        //    accumulatedRowHeights[i] += delta;
-        //}
+        var renderedListItem = itemsRenderer.getRenderedItems().filter(function(rItem){
+            return rItem.getItemIndex() == index;
+        })[0];
 
-        for (var i= index; i >= 0; --i) {
-            listItemsOffsets[i]-= delta;
-        }
+        if (renderedListItem) {
+            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
+                startOffset = listItemsOffsets[index];
 
-        updateScrollerDimentions();
+            if (!newHeight) {
+                renderedListItem.setItemHeight(newHeight = renderedListItem.getDomElement().clientHeight);
+            }
 
-
-
-        needsRender = true;
-        if (firstItem && index <= firstItem.getItemIndex() ) {
-            scroller.changeScrollPosition(topOffset + delta);
+            shiftItemOffsetIfNeeded(index + 1, startOffset + newHeight);
         }
     }
 
@@ -254,7 +228,7 @@ var InfiniteList = function (listConfig) {
         var shiftTop = itemOffset - listItemsOffsets[itemIndex];
         if (shiftTop != 0) {
             for (var i = itemIndex; i >= 0; --i) {
-                updateItemOffset(listItemsOffsets[i] + shiftTop);
+                updateItemOffset(i, listItemsOffsets[i] + shiftTop);
             }
             updateScrollerDimentions();
         }
@@ -265,7 +239,7 @@ var InfiniteList = function (listConfig) {
             var shiftBottom = itemOffset - listItemsOffsets[itemIndex];
             if (shiftBottom != 0) {
                 for (var i = itemIndex; i < listItemsOffsets.length; ++i) {
-                    updateItemOffset(listItemsOffsets[i] + shiftBottom);
+                    updateItemOffset(i, listItemsOffsets[i] + shiftBottom);
                 }
                 updateScrollerDimentions();
             }
@@ -275,7 +249,7 @@ var InfiniteList = function (listConfig) {
     function updateItemOffset(itemIndex, newOffset) {
         var renderedItems = itemsRenderer.getRenderedItems(),
             firstRenderedItem = itemsRenderer.getRenderedItems()[0],
-            firstRenderedIndex = firstRenderedItem && firstRenderedItem.getItemIndex() || -1;
+            firstRenderedIndex = firstRenderedItem && firstRenderedItem.getItemIndex() || 0;
 
         listItemsOffsets[itemIndex]  = newOffset;
         if (renderedItems[itemIndex - firstRenderedIndex]) {

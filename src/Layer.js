@@ -49,6 +49,10 @@ var Layer = function (parentElement) {
         return itemHeight || (itemHeight = getDomElement().clientHeight);
     }
 
+    function setItemHeight(newHeight) {
+        itemHeight = newHeight;
+    }
+
     function createListItemWrapperElement() {
         var el = document.createElement('div');
         StyleHelpers.applyElementStyle(el, {
@@ -66,6 +70,7 @@ var Layer = function (parentElement) {
         getItemOffset: getItemOffset,
         setItemOffset: setItemOffset,
         getItemHeight: getItemHeight,
+        setItemHeight: setItemHeight,
         getIdentifier: getIdentifier
     }
 };

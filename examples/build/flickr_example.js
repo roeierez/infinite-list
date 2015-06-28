@@ -54,47 +54,72 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(3);
+	module.exports = __webpack_require__(5);
 
 
 /***/ },
 /* 1 */,
 /* 2 */,
-/* 3 */
+/* 3 */,
+/* 4 */,
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var InfiniteList = __webpack_require__(6),
-	    list = new InfiniteList({
+	    template = __webpack_require__(8);
 
-	        itemHeightGetter: function(){
-	            return 50;
+	var socialGetter = (function() {
+	    /* just a utility to do the script injection */
+	    function injectScript(url) {
+	        var script = document.createElement('script');
+	        script.async = true;
+	        script.src = url;
+	        document.body.appendChild(script);
+	    }
+
+	    return {
+	        getFacebookCount: function(url, callbackName) {
+	            injectScript('https://graph.facebook.com/?id=' + url + '&callback=' + callbackName);
 	        },
-
-	        itemRenderer: function(index, domElement){
-	            domElement.innerHTML = 'Item ' + index;
-	        },
-
-	        loadMoreRenderer: function(index, domElement){
-	            domElement.innerHTML = 'I am loading from #' + index;
-	        },
-
-	        pageFetcher: function(fromIndex, pageCallback){
-	            setTimeout(function(){ //simulate network fetch
-	                pageCallback(10, true);
-	            }, 2000)
-	        },
-
-	        initialPage: {
-	            hasMore: true,
-	            itemsCount: 10
+	        getFlickrPage: function(pageNum, callbackName) {
+	            injectScript('https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&per_page=100&api_key=3b7455f86113e9b01fc8ec08b413c40a&format=json&page=' + pageNum + '&jsoncallback=' + callbackName);
 	        }
+	    };
+	})();
 
-	    }).attach(document.getElementById('main'));
 
+	var listCallback = null,
+	    aggregatedResults = [];
+
+	window.flickrCallback = function(results){
+	    aggregatedResults = aggregatedResults.concat(results.photos.photo);
+	    listCallback(results.photos.photo.length, true);
+	}
+	var list = new InfiniteList({
+
+	    itemRenderer: function(index, domElement){
+	        aggregatedResults[index].onImageLoaded = function(){
+	            list.refreshItemHeight(index);
+	        };
+	        var el = React.render(React.createElement(template, aggregatedResults[index]), domElement);
+	        //  heights[index] = el.getDOMNode().clientHeight;
+	        // list.itemHeightChangedAtIndex(index);
+	    },
+
+	    pageFetcher: function(fromIndex, callback){
+	        listCallback = callback;
+	        socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback')
+	    },
+
+	    initialPage: {
+	        hasMore: true,
+	        itemsCount: 0
+	    }
+
+	});
+	list.attach(document.getElementById('main'));
 
 /***/ },
-/* 4 */,
-/* 5 */,
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -375,7 +400,44 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 7 */,
-/* 8 */,
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var template = React.createClass({displayName: "template",
+
+	    getInitialState: function(){
+	        return {imageLoaded: false};
+	    },
+
+	    render: function(){
+	        return  React.createElement("article", null, 
+	                    React.createElement("div", {className: "title"}, 
+	                        this.props.title
+	                    ), 
+	                    React.createElement("span", {style: {height: '100px', display: this.state.imageLoaded ? 'none' : 'block'}}, " ", "Loading...", " "), 
+	                    React.createElement("img", {style: {width: '200px', height: '200px', display: this.state.imageLoaded ? 'block' : 'none'}, onLoad: this.onImageLoaded, src: "https://farm" + this.props.farm + ".staticflickr.com/" + this.props.server + "/" + this.props.id + "_" + this.props.secret + "_n.jpg"})
+	                )
+	    },
+
+	    componentWillReceiveProps: function(){
+	        this.setState({imageLoaded: false});
+	    },
+
+	    onImageLoaded: function(){
+	        var me = this;
+	        this.setState({imageLoaded: true}, function(){
+	            if (me.props.onImageLoaded) {
+	                me.props.onImageLoaded();
+	            }
+	        });
+	    }
+	});
+
+	module.exports = template;
+
+	//https://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}_[mstzb].jpg
+
+/***/ },
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 

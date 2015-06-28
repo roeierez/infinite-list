@@ -28,26 +28,26 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         var topRenderedItem = renderedListItems[0],
             bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 
-        while (topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
+        while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
             topRenderedItem = renderBefore(topRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
                 return true;
             }
         }
 
-        while (bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getIdentifier() != '$LoadMore') {
+        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getIdentifier() != '$LoadMore') {
             bottomRenderedItem = renderAfter(bottomRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
                 return true;
             }
         }
 
-        while (topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
+        while (topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
             layersPool.addLayer(renderedListItems.shift());
             topRenderedItem = renderedListItems[0];
         }
 
-        while (bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
+        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
             layersPool.addLayer(renderedListItems.pop());
             bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
         }
@@ -98,7 +98,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
     }
 
     function renderLoadMore(){
-        if (renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
+        if (renderedListItems.length == 0 || renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
             var loadMoreLayer = borrowLayerForIndex(listConfig.itemsCount, '$LoadMore', -1);
             listConfig.loadMoreRenderer(listConfig.itemsCount, loadMoreLayer.getDomElement());
             pageCallback();
