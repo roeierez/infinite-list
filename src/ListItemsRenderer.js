@@ -2,7 +2,7 @@ var Layer = require('./Layer'),
     LayersPool = require('./layerPool'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     MIN_FPS = 30,
-    MAX_TIME_PER_FRAME = 1000 % MIN_FPS;
+    MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
 
 var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pageCallback){
 
@@ -31,23 +31,32 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
             topRenderedItem = renderBefore(topRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-                return true;
+                //return true;
             }
         }
 
-        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getIdentifier() != '$LoadMore') {
+        if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
+            var bottomIndex = bottomRenderedItem.getItemIndex();
+            layersPool.addLayer(renderedListItems.pop());
+            if (renderedListItems.length > 0) {
+                bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+            } else {
+                return render(topOffset, bottomIndex);
+            }
+        }
+        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
             bottomRenderedItem = renderAfter(bottomRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-                return true;
+                //return true;
             }
         }
 
-        while (topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
+        while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
             layersPool.addLayer(renderedListItems.shift());
             topRenderedItem = renderedListItems[0];
         }
 
-        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
+        while (renderedListItems.length > 1 && bottomRenderedItem && bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
             layersPool.addLayer(renderedListItems.pop());
             bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
         }
@@ -99,7 +108,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
 
     function renderLoadMore(){
         if (renderedListItems.length == 0 || renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
-            var loadMoreLayer = borrowLayerForIndex(listConfig.itemsCount, '$LoadMore', -1);
+            var loadMoreLayer = borrowLayerForIndex(listConfig.itemsCount, '$LoadMore');
             listConfig.loadMoreRenderer(listConfig.itemsCount, loadMoreLayer.getDomElement());
             pageCallback();
             return loadMoreLayer;

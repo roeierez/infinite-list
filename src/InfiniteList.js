@@ -14,7 +14,7 @@ var InfiniteList = function (listConfig) {
             itemTypeGetter: null,
             pageFetcher: null,
             loadMoreRenderer: function(index, domElement){
-                domElement.innerHTML = 'Loading...';
+                domElement.innerHTML = '<div style="margin-left:14px;height:50px>Loading...</div>';
             },
             hasMore: false,
             itemsCount: 0
@@ -80,9 +80,13 @@ var InfiniteList = function (listConfig) {
         });
     }
 
-    function calculateHeights() {
-        listItemsOffsets = [offsetDelta];
-        for (var i = 1; i <= config.itemsCount || 0; ++i) {
+    function calculateHeights(fromIndex) {
+        if (!fromIndex) {
+            listItemsOffsets = [offsetDelta];
+            fromIndex = 1;
+        }
+
+        for (var i = fromIndex; i <= config.itemsCount || 0; ++i) {
             var currentRowHeight = config.itemHeightGetter ? config.itemHeightGetter(i - 1) : DEFAULT_ITEM_HEIGHT;
             listItemsOffsets[i] = listItemsOffsets[i - 1] + currentRowHeight;
         }
@@ -113,7 +117,8 @@ var InfiniteList = function (listConfig) {
 
         var firstRenderedItem = itemsRenderer.getRenderedItems()[0];
         scroller.setDimensions(
-            !firstRenderedItem || firstRenderedItem.getItemIndex() == 0 ? listItemsOffsets[0] : Number.MIN_SAFE_INTEGER,
+            Number.MIN_SAFE_INTEGER,
+            //!firstRenderedItem || firstRenderedItem.getItemIndex() == 0 ? listItemsOffsets[0] : Number.MIN_SAFE_INTEGER,
             getListHeight(),
             parentElementHeight
         );
@@ -138,15 +143,17 @@ var InfiniteList = function (listConfig) {
     }
 
     function getListHeight(){
-        return getStartOffsetForIndex(listItemsOffsets.length - 1) + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT);
+        var renderedItems = itemsRenderer.getRenderedItems(),
+            maxRenderedItem = renderedItems && renderedItems[renderedItems.length - 1],
+            currentHeight = maxRenderedItem && (maxRenderedItem.getItemOffset() + maxRenderedItem.getItemHeight()) ||  Number.MIN_SAFE_INTEGER;
+
+        return Math.max(currentHeight, getStartOffsetForIndex(listItemsOffsets.length - 1) + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT));
     }
 
     function render() {
         var topItem = null,
-            shiftTop = 0,
+            maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
             bottomItem = null,
-            shiftBottom = 0,
-            scrollerNeedUpdate = false,
             renderedItems = itemsRenderer.getRenderedItems();
 
         if (renderedItems.length > 0) {
@@ -174,19 +181,22 @@ var InfiniteList = function (listConfig) {
             listItemsOffsets[renderedItems[i].getItemIndex()] = renderedItems[i].getItemOffset();
         }
 
-        if (scrollerNeedUpdate) {
-            updateScrollerDimentions();
-        }
-
         scrollToIndex = null;
         topItemOffset = null;
+
+        if (renderedItems.length > 0 && renderedItems[renderedItems.length - 1].getItemIndex() == maxIndexToRender) {
+            if (topOffset > getListHeight() - parentElementHeight) {
+                scroller.scrollTo(getListHeight() - parentElementHeight);
+            }
+        }
     }
 
     function loadMoreCallback(){
         config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
             config.hasMore = hasMore;
             config.itemsCount += pageItemsCount;
-            refresh();
+            calculateHeights(config.itemsCount - pageItemsCount);
+            render();
         });
     }
 
@@ -210,7 +220,11 @@ var InfiniteList = function (listConfig) {
                 renderedListItem.setItemHeight(newHeight = renderedListItem.getDomElement().clientHeight);
             }
 
-            shiftItemOffsetIfNeeded(index + 1, startOffset + newHeight);
+            if (renderedListItem.getItemOffset() < topOffset) {
+                shiftTopOffsets(index, listItemsOffsets[index + 1] - newHeight);
+            } else {
+                shiftItemOffsetIfNeeded(index + 1, startOffset + newHeight);
+            }
         }
     }
 

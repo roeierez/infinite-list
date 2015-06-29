@@ -26,6 +26,9 @@ var listCallback = null,
 
 window.flickrCallback = function(results){
     aggregatedResults = aggregatedResults.concat(results.photos.photo);
+    for (var i=0; i<aggregatedResults.length; ++i) {
+        aggregatedResults[i].index = i;
+    }
     listCallback(results.photos.photo.length, true);
 }
 var list = new InfiniteList({
@@ -39,9 +42,17 @@ var list = new InfiniteList({
         // list.itemHeightChangedAtIndex(index);
     },
 
+    loadMoreRenderer: function(index, domElement){
+        domElement.innerHTML = '<div style="margin-left:14px;height:50px; background-image:url(../resources/loading.gif); background-repeat: no-repeat"><span style="margin-left: 40px">Loading...</span></div>';
+    },
+
     pageFetcher: function(fromIndex, callback){
         listCallback = callback;
-        socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback')
+        socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback');
+        //setTimeout(function(){
+        //    socialGetter.getFlickrPage(fromIndex / 10 + 1, 'flickrCallback');
+        //}, 4000);
+
     },
 
     initialPage: {
