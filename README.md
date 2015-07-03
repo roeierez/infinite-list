@@ -22,7 +22,7 @@ var infiniteList = new InfiniteList(
     initialPage: {
       itemsCount: 100000
     },
-    itemRenderer: function(domElement, index){
+    itemRenderer: function(index, domElement){
       domElement.innerHTML = "Item " + index;
     },
     itemHeightGetter: function(index){
@@ -32,7 +32,7 @@ var infiniteList = new InfiniteList(
 ).attach(parentElement)
 ```
 
-The first argument to the itemRenderer is a domElement. The first time this element is rendered it is an empty DIV.
+The first argument to the itemRenderer is an index and the second is a domElement. The first time this element is rendered it is an empty DIV.
 Later on when this item becomes invisible because of scrolling action, for example, the DIV is not destroyed but cached and recycled for later use.
 The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.
 
@@ -82,10 +82,10 @@ the initial page configuration, has two properties:
     1. itemsCount [Number] - The number of items in the list.
     2. hasMore [Boolean] - True if we have more items to load (paging)
 
-#### Function itemRenderer(domElement, index) 
+#### Function itemRenderer(index, domElement) 
 The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.
 
-#### Function loadMoreRenderer(domElement, index)
+#### Function loadMoreRenderer(index, domElement)
 The renderer method to invoke a new page is about to be fetched and loadMore component should be rendered. This method should populate the domElement with the HTML markup.
 
 #### Function itemHeightGetter(index)
