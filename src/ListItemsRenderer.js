@@ -31,7 +31,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
             topRenderedItem = renderBefore(topRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-                //return true;
+                return true;
             }
         }
 
@@ -47,7 +47,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
             bottomRenderedItem = renderAfter(bottomRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-                //return true;
+                return true;
             }
         }
 

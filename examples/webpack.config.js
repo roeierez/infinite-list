@@ -5,7 +5,7 @@ module.exports = {
         recycling: ['./src/recycling.js'],
         paging: ['./src/paging.js'],
         react: ['./src/react.js'],
-        flickr: ['./src/twitter.js']
+        flickr: ['./src/flickr.js']
     },
     output: {
         path: './build',

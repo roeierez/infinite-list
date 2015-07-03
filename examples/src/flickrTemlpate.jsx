@@ -16,8 +16,6 @@ var template = React.createClass({
     componentWillReceiveProps: function(nextProps){
         if (this.props.id != nextProps.id) {
             this.setState({imageLoaded: false});
-        } else {
-            //console.error('image is loaded');
         }
     },
 
@@ -32,5 +30,3 @@ var template = React.createClass({
 });
 
 module.exports = template;
-
-//https://farm{farm-id}.staticflickr.com/{server-id}/{id}_{secret}_[mstzb].jpg

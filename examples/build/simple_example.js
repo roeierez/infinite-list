@@ -146,6 +146,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            touchProvider
 	        );
 
+	        scroller.setDimensions(
+	            Number.MIN_SAFE_INTEGER,
+	            Number.MAX_SAFE_INTEGER
+	        );
+
 	        window.addEventListener('resize', refresh.bind(this));
 	        runAnimationLoop();
 	        refresh();
@@ -199,17 +204,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            rootElement);
 	    };
 
-	    function updateScrollerDimentions(){
-
-	        var firstRenderedItem = itemsRenderer.getRenderedItems()[0];
-	        scroller.setDimensions(
-	            Number.MIN_SAFE_INTEGER,
-	            //!firstRenderedItem || firstRenderedItem.getItemIndex() == 0 ? listItemsOffsets[0] : Number.MIN_SAFE_INTEGER,
-	            getListHeight(),
-	            parentElementHeight
-	        );
-	    }
-
 	    function refresh(){
 	        var topListItem = itemsRenderer.getRenderedItems()[0],
 	            topListItemIndex = topListItem && topListItem.getItemIndex() || 0,
@@ -223,7 +217,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        itemsRenderer.refresh();
 	        calculateHeights();
-	        updateScrollerDimentions();
 	        scrollbarRenderer.refresh();
 	        scrollToItem(topListItemIndex, differenceFromTop);
 	    }
@@ -298,18 +291,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return rItem.getItemIndex() == index;
 	        })[0];
 
+	        //we only need to do something if the index points to a rendered item.
 	        if (renderedListItem) {
 	            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
 	                startOffset = listItemsOffsets[index];
 
 	            if (!newHeight) {
-	                renderedListItem.setItemHeight(newHeight = renderedListItem.getDomElement().clientHeight);
+	                newHeight = renderedListItem.getDomElement().clientHeight
 	            }
+
+	            renderedListItem.setItemHeight(newHeight);
 
 	            if (renderedListItem.getItemOffset() < topOffset) {
 	                shiftTopOffsets(index, listItemsOffsets[index + 1] - newHeight);
 	            } else {
-	                shiftItemOffsetIfNeeded(index + 1, startOffset + newHeight);
+	                shiftBottomOffsets(index + 1, startOffset + newHeight);
 	            }
 	        }
 	    }
@@ -330,7 +326,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            for (var i = itemIndex; i >= 0; --i) {
 	                updateItemOffset(i, listItemsOffsets[i] + shiftTop);
 	            }
-	            updateScrollerDimentions();
 	        }
 	    }
 
@@ -341,7 +336,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	                for (var i = itemIndex; i < listItemsOffsets.length; ++i) {
 	                    updateItemOffset(i, listItemsOffsets[i] + shiftBottom);
 	                }
-	                updateScrollerDimentions();
 	            }
 	        }
 	    }
@@ -492,9 +486,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var VerticalScroller = function (parentElement, callback) {
 
 	    var timestamp = 0,
-	        scrollerHeight = 0,
-	        minimumOffseat = 0,
-	        scrollerViewHeight = 0,
+	        minOffset = 0,
+	        maxOffset = 0,
 	        frame = 0,
 	        velocity = 0,
 	        amplitude = 0,
@@ -534,9 +527,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        velocity = 0.8 * v + 0.2 * velocity;
 	    }
 
-	    function scroll (y){
-	        offset = y;//Math.max(minimumOffseat, Math.min(scrollerHeight - scrollerViewHeight, y));
-	        //offset = Math.max(startOffset, Math.min(scrollerHeight - scrollerViewHeight, y));// Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
+	    function scroll (y) {
+	        offset = Math.min( Math.max(y, minOffset), maxOffset);
 	        callback(offset);
 	    }
 
@@ -607,12 +599,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scroll(y);
 	    }
 
-	    function setDimensions(minOffset, height, viewHeight, addScrollOffset){
-	        target += (addScrollOffset || 0);
-	        offset += (addScrollOffset || 0);
-	        minimumOffseat = minOffset;
-	        scrollerHeight = height;
-	        scrollerViewHeight = viewHeight;
+	    function setDimensions(min, max){
+	        minOffset = min;
+	        maxOffset = max;
 	    }
 
 	    return {
@@ -752,7 +741,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
 	            topRenderedItem = renderBefore(topRenderedItem);
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-	                //return true;
+	                return true;
 	            }
 	        }
 
@@ -768,7 +757,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
 	            bottomRenderedItem = renderAfter(bottomRenderedItem);
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-	                //return true;
+	                return true;
 	            }
 	        }
 

@@ -3,9 +3,8 @@ var SCROLLING_TIME_CONSTANT = 250;
 var VerticalScroller = function (parentElement, callback) {
 
     var timestamp = 0,
-        scrollerHeight = 0,
-        minimumOffseat = 0,
-        scrollerViewHeight = 0,
+        minOffset = 0,
+        maxOffset = 0,
         frame = 0,
         velocity = 0,
         amplitude = 0,
@@ -45,9 +44,8 @@ var VerticalScroller = function (parentElement, callback) {
         velocity = 0.8 * v + 0.2 * velocity;
     }
 
-    function scroll (y){
-        offset = y;//Math.max(minimumOffseat, Math.min(scrollerHeight - scrollerViewHeight, y));
-        //offset = Math.max(startOffset, Math.min(scrollerHeight - scrollerViewHeight, y));// Math.max(0, Math.min(scrollerHeight - scrollerViewHeight, y));
+    function scroll (y) {
+        offset = Math.min( Math.max(y, minOffset), maxOffset);
         callback(offset);
     }
 
@@ -118,12 +116,9 @@ var VerticalScroller = function (parentElement, callback) {
         scroll(y);
     }
 
-    function setDimensions(minOffset, height, viewHeight, addScrollOffset){
-        target += (addScrollOffset || 0);
-        offset += (addScrollOffset || 0);
-        minimumOffseat = minOffset;
-        scrollerHeight = height;
-        scrollerViewHeight = viewHeight;
+    function setDimensions(min, max){
+        minOffset = min;
+        maxOffset = max;
     }
 
     return {

@@ -60,6 +60,11 @@ var InfiniteList = function (listConfig) {
             touchProvider
         );
 
+        scroller.setDimensions(
+            Number.MIN_SAFE_INTEGER,
+            Number.MAX_SAFE_INTEGER
+        );
+
         window.addEventListener('resize', refresh.bind(this));
         runAnimationLoop();
         refresh();
@@ -113,17 +118,6 @@ var InfiniteList = function (listConfig) {
             rootElement);
     };
 
-    function updateScrollerDimentions(){
-
-        var firstRenderedItem = itemsRenderer.getRenderedItems()[0];
-        scroller.setDimensions(
-            Number.MIN_SAFE_INTEGER,
-            //!firstRenderedItem || firstRenderedItem.getItemIndex() == 0 ? listItemsOffsets[0] : Number.MIN_SAFE_INTEGER,
-            getListHeight(),
-            parentElementHeight
-        );
-    }
-
     function refresh(){
         var topListItem = itemsRenderer.getRenderedItems()[0],
             topListItemIndex = topListItem && topListItem.getItemIndex() || 0,
@@ -137,7 +131,6 @@ var InfiniteList = function (listConfig) {
         });
         itemsRenderer.refresh();
         calculateHeights();
-        updateScrollerDimentions();
         scrollbarRenderer.refresh();
         scrollToItem(topListItemIndex, differenceFromTop);
     }
@@ -212,18 +205,21 @@ var InfiniteList = function (listConfig) {
             return rItem.getItemIndex() == index;
         })[0];
 
+        //we only need to do something if the index points to a rendered item.
         if (renderedListItem) {
             var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
                 startOffset = listItemsOffsets[index];
 
             if (!newHeight) {
-                renderedListItem.setItemHeight(newHeight = renderedListItem.getDomElement().clientHeight);
+                newHeight = renderedListItem.getDomElement().clientHeight
             }
+
+            renderedListItem.setItemHeight(newHeight);
 
             if (renderedListItem.getItemOffset() < topOffset) {
                 shiftTopOffsets(index, listItemsOffsets[index + 1] - newHeight);
             } else {
-                shiftItemOffsetIfNeeded(index + 1, startOffset + newHeight);
+                shiftBottomOffsets(index + 1, startOffset + newHeight);
             }
         }
     }
@@ -244,7 +240,6 @@ var InfiniteList = function (listConfig) {
             for (var i = itemIndex; i >= 0; --i) {
                 updateItemOffset(i, listItemsOffsets[i] + shiftTop);
             }
-            updateScrollerDimentions();
         }
     }
 
@@ -255,7 +250,6 @@ var InfiniteList = function (listConfig) {
                 for (var i = itemIndex; i < listItemsOffsets.length; ++i) {
                     updateItemOffset(i, listItemsOffsets[i] + shiftBottom);
                 }
-                updateScrollerDimentions();
             }
         }
     }

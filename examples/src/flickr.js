@@ -37,9 +37,7 @@ var list = new InfiniteList({
         aggregatedResults[index].onImageLoaded = function(){
             list.refreshItemHeight(index);
         };
-        var el = React.render(React.createElement(template, aggregatedResults[index]), domElement);
-        //  heights[index] = el.getDOMNode().clientHeight;
-        // list.itemHeightChangedAtIndex(index);
+        React.render(React.createElement(template, aggregatedResults[index]), domElement);
     },
 
     loadMoreRenderer: function(index, domElement){
@@ -49,9 +47,6 @@ var list = new InfiniteList({
     pageFetcher: function(fromIndex, callback){
         listCallback = callback;
         socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback');
-        //setTimeout(function(){
-        //    socialGetter.getFlickrPage(fromIndex / 10 + 1, 'flickrCallback');
-        //}, 4000);
 
     },
 
@@ -62,3 +57,4 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
+setTimeout(function(){list.scrollToItem(199);},2000);
