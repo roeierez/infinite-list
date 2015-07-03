@@ -44,7 +44,7 @@ var infiniteList = new InfiniteList(
     initialPage: {
       itemsCount: 100000
     },
-    itemRenderer: function(domElement, index){
+    itemRenderer: function(index, domElement){
       domElement.innerHTML = <span class="pl-s"><span class="pl-pds">"</span>Item <span class="pl-pds">"</span></span> + index<span class="pl-k">;</span>
     },
     itemHeightGetter: function(index){
@@ -122,12 +122,12 @@ config has the following properties:</p>
 </code></pre>
 
 <h4>
-<a id="function-itemrendererdomelement-index" class="anchor" href="#function-itemrendererdomelement-index" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemRenderer(domElement, index)</h4>
+<a id="function-itemrendererindex-domelement" class="anchor" href="#function-itemrendererindex-domelement" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function itemRenderer(index, domElement)</h4>
 
 <p>The renderer method to invoke when an item needs to be rendered. This method should populate the domElement with the HTML markup.</p>
 
 <h4>
-<a id="function-loadmorerendererdomelement-index" class="anchor" href="#function-loadmorerendererdomelement-index" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function loadMoreRenderer(domElement, index)</h4>
+<a id="function-loadmorerendererindex-domelement" class="anchor" href="#function-loadmorerendererindex-domelement" aria-hidden="true"><span class="octicon octicon-link"></span></a>Function loadMoreRenderer(index, domElement)</h4>
 
 <p>The renderer method to invoke a new page is about to be fetched and loadMore component should be rendered. This method should populate the domElement with the HTML markup.</p>
 
