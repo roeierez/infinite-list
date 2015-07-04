@@ -121,7 +121,7 @@ var InfiniteList = function (listConfig) {
     function refresh(){
         var topListItem = itemsRenderer.getRenderedItems()[0],
             topListItemIndex = topListItem && topListItem.getItemIndex() || 0,
-            topItemStartsAt = getStartOffsetForIndex(topListItemIndex) || 0,
+            topItemStartsAt = topListItem && topListItem.getItemOffset() || 0,
             differenceFromTop = topOffset - topItemStartsAt;
 
         parentElementHeight = parentElement.clientHeight;
@@ -140,7 +140,7 @@ var InfiniteList = function (listConfig) {
             maxRenderedItem = renderedItems && renderedItems[renderedItems.length - 1],
             currentHeight = maxRenderedItem && (maxRenderedItem.getItemOffset() + maxRenderedItem.getItemHeight()) ||  Number.MIN_SAFE_INTEGER;
 
-        return Math.max(currentHeight, getStartOffsetForIndex(listItemsOffsets.length - 1) + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT));
+        return Math.max(currentHeight, listItemsOffsets[listItemsOffsets.length - 1] + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT));
     }
 
     function render() {
@@ -178,8 +178,11 @@ var InfiniteList = function (listConfig) {
         topItemOffset = null;
 
         if (renderedItems.length > 0 && renderedItems[renderedItems.length - 1].getItemIndex() == maxIndexToRender) {
-            if (topOffset > getListHeight() - parentElementHeight) {
-                scroller.scrollTo(getListHeight() - parentElementHeight);
+            var lastItem = renderedItems[renderedItems.length - 1],
+                maxScrollPos = lastItem.getItemOffset() + lastItem.getItemHeight();
+
+            if (topOffset > maxScrollPos - parentElementHeight) {
+                scroller.scrollTo(maxScrollPos - parentElementHeight);
             }
         }
     }
@@ -196,7 +199,7 @@ var InfiniteList = function (listConfig) {
     function scrollToItem(index, relativeOffset, animate) {
         topItemOffset = relativeOffset || 0;
         scrollToIndex = index;
-        scroller.scrollTo(getStartOffsetForIndex(index), animate);
+        scroller.scrollTo(0, animate);
     }
 
     function refreshItemHeight(index){
@@ -208,7 +211,7 @@ var InfiniteList = function (listConfig) {
         //we only need to do something if the index points to a rendered item.
         if (renderedListItem) {
             var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
-                startOffset = listItemsOffsets[index];
+                startOffset = renderedListItem.getItemOffset();
 
             if (!newHeight) {
                 newHeight = renderedListItem.getDomElement().clientHeight
@@ -263,10 +266,6 @@ var InfiniteList = function (listConfig) {
         if (renderedItems[itemIndex - firstRenderedIndex]) {
             renderedItems[itemIndex - firstRenderedIndex].setItemOffset(newOffset);
         }
-    }
-
-    function getStartOffsetForIndex (index) {
-        return listItemsOffsets[index];
     }
 
     return {

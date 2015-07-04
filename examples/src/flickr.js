@@ -57,4 +57,3 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
-setTimeout(function(){list.scrollToItem(199);},2000);
