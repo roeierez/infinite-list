@@ -126,10 +126,6 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         renderedListItems = [];
     }
 
-    function isBusy(){
-        return AnimationFrameHelper.getFPS() < MIN_FPS;
-    }
-
    function getRenderedItems(){
        return renderedListItems;
    }
