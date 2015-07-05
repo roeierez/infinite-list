@@ -225,7 +225,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        itemsRenderer.refresh();
 	        calculateHeights();
 	        scrollbarRenderer.refresh();
-	        scrollToItem(topListItemIndex, differenceFromTop);
+	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
 	    function render() {
@@ -281,10 +281,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    }
 
-	    function scrollToItem(index, relativeOffset, animate) {
+	    function scrollToItem(index, animate, relativeOffset) {
+	        var targetPosition = 0;
+	        if (config.itemHeightGetter) {
+	            for (var i=0; i<index; ++i){
+	                targetPosition += config.itemHeightGetter(i);
+	            }
+	        } else {
+	            scrollToIndex = index;
+	        }
 	        topItemOffset = relativeOffset || 0;
-	        scrollToIndex = index;
-	        scroller.scrollTo( config.itemHeightGetter &&  0, animate);
+	        scroller.scrollTo( targetPosition, config.itemHeightGetter && animate);
 	    }
 
 	    function refreshItemHeight(index){
@@ -558,9 +565,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	        e.stopPropagation();
 	    }
 
-	    function scrollTo(y){
-	        amplitude = 0;
-	        scroll(y);
+	    function scrollTo(y, animate){
+	        var maxAnimateDelta = 4000;
+	        if (animate) {
+	            if (y - offset > maxAnimateDelta) {
+	                offset = y - maxAnimateDelta;
+	            } else if (offset - y > maxAnimateDelta) {
+	                offset = y + maxAnimateDelta;
+	            }
+
+	            amplitude = y - offset;
+	            target = y;
+	            timestamp = Date.now();
+	            requestAnimationFrame(autoScroll);
+	        } else {
+	            amplitude = 0;
+	            scroll(y);
+	        }
 	    }
 
 	    function changeScrollPosition (y) {

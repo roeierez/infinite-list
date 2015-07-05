@@ -40,6 +40,10 @@ var list = new InfiniteList({
         React.render(React.createElement(template, aggregatedResults[index]), domElement);
     },
 
+    //itemHeightGetter: function(index) {
+    //    return 200;
+    //},
+
     loadMoreRenderer: function(index, domElement){
         domElement.innerHTML = '<div style="margin-left:14px;height:50px; background-image:url(../resources/loading.gif); background-repeat: no-repeat"><span style="margin-left: 40px">Loading...</span></div>';
     },
@@ -47,7 +51,6 @@ var list = new InfiniteList({
     pageFetcher: function(fromIndex, callback){
         listCallback = callback;
         socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback');
-
     },
 
     initialPage: {
@@ -57,3 +60,9 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
+//setTimeout(function(){
+//    list.scrollToItem(94, true);
+//    setTimeout(function(){
+//        list.scrollToItem(0, true);
+//    },2000);
+//},2000);

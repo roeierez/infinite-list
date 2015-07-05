@@ -107,9 +107,23 @@ var VerticalScroller = function (parentElement, callback) {
         e.stopPropagation();
     }
 
-    function scrollTo(y){
-        amplitude = 0;
-        scroll(y);
+    function scrollTo(y, animate){
+        var maxAnimateDelta = 4000;
+        if (animate) {
+            if (y - offset > maxAnimateDelta) {
+                offset = y - maxAnimateDelta;
+            } else if (offset - y > maxAnimateDelta) {
+                offset = y + maxAnimateDelta;
+            }
+
+            amplitude = y - offset;
+            target = y;
+            timestamp = Date.now();
+            requestAnimationFrame(autoScroll);
+        } else {
+            amplitude = 0;
+            scroll(y);
+        }
     }
 
     function changeScrollPosition (y) {

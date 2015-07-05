@@ -125,7 +125,7 @@ var InfiniteList = function (listConfig) {
         itemsRenderer.refresh();
         calculateHeights();
         scrollbarRenderer.refresh();
-        scrollToItem(topListItemIndex, differenceFromTop);
+        scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
     function render() {
@@ -181,10 +181,17 @@ var InfiniteList = function (listConfig) {
         });
     }
 
-    function scrollToItem(index, relativeOffset, animate) {
+    function scrollToItem(index, animate, relativeOffset) {
+        var targetPosition = 0;
+        if (config.itemHeightGetter) {
+            for (var i=0; i<index; ++i){
+                targetPosition += config.itemHeightGetter(i);
+            }
+        } else {
+            scrollToIndex = index;
+        }
         topItemOffset = relativeOffset || 0;
-        scrollToIndex = index;
-        scroller.scrollTo( config.itemHeightGetter &&  0, animate);
+        scroller.scrollTo( targetPosition, config.itemHeightGetter && animate);
     }
 
     function refreshItemHeight(index){

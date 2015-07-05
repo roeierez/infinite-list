@@ -66,7 +66,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var InfiniteList = __webpack_require__(6),
-	    template = __webpack_require__(7);
+	    template = __webpack_require__(8);
 
 	var socialGetter = (function() {
 	    /* just a utility to do the script injection */
@@ -107,6 +107,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        React.render(React.createElement(template, aggregatedResults[index]), domElement);
 	    },
 
+	    //itemHeightGetter: function(index) {
+	    //    return 200;
+	    //},
+
 	    loadMoreRenderer: function(index, domElement){
 	        domElement.innerHTML = '<div style="margin-left:14px;height:50px; background-image:url(../resources/loading.gif); background-repeat: no-repeat"><span style="margin-left: 40px">Loading...</span></div>';
 	    },
@@ -114,7 +118,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    pageFetcher: function(fromIndex, callback){
 	        listCallback = callback;
 	        socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback');
-
 	    },
 
 	    initialPage: {
@@ -124,6 +127,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 	list.attach(document.getElementById('main'));
+	setTimeout(function(){
+	    list.scrollToItem(94, true);
+	    setTimeout(function(){
+	        list.scrollToItem(0, true);
+	    },2000);
+	},2000);
 
 /***/ },
 /* 6 */
@@ -256,7 +265,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        itemsRenderer.refresh();
 	        calculateHeights();
 	        scrollbarRenderer.refresh();
-	        scrollToItem(topListItemIndex, differenceFromTop);
+	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
 	    function render() {
@@ -312,10 +321,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    }
 
-	    function scrollToItem(index, relativeOffset, animate) {
+	    function scrollToItem(index, animate, relativeOffset) {
+	        var targetPosition = 0;
+	        if (config.itemHeightGetter) {
+	            for (var i=0; i<index; ++i){
+	                targetPosition += config.itemHeightGetter(i);
+	            }
+	        } else {
+	            scrollToIndex = index;
+	        }
 	        topItemOffset = relativeOffset || 0;
-	        scrollToIndex = index;
-	        scroller.scrollTo( config.itemHeightGetter &&  0, animate);
+	        scroller.scrollTo( targetPosition, config.itemHeightGetter && animate);
 	    }
 
 	    function refreshItemHeight(index){
@@ -367,7 +383,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = InfiniteList;
 
 /***/ },
-/* 7 */
+/* 7 */,
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var template = React.createClass({displayName: "template",
@@ -404,7 +421,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = template;
 
 /***/ },
-/* 8 */,
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -625,9 +641,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	        e.stopPropagation();
 	    }
 
-	    function scrollTo(y){
-	        amplitude = 0;
-	        scroll(y);
+	    function scrollTo(y, animate){
+	        var maxAnimateDelta = 4000;
+	        if (animate) {
+	            if (y - offset > maxAnimateDelta) {
+	                offset = y - maxAnimateDelta;
+	            } else if (offset - y > maxAnimateDelta) {
+	                offset = y + maxAnimateDelta;
+	            }
+
+	            amplitude = y - offset;
+	            target = y;
+	            timestamp = Date.now();
+	            requestAnimationFrame(autoScroll);
+	        } else {
+	            amplitude = 0;
+	            scroll(y);
+	        }
 	    }
 
 	    function changeScrollPosition (y) {
