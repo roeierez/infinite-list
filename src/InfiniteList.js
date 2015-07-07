@@ -128,17 +128,28 @@ var InfiniteList = function (listConfig) {
         scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
-    function render() {
+    function updateScroller() {
         var maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
-            renderedItems = itemsRenderer.getRenderedItems();
+            renderedItems = itemsRenderer.getRenderedItems(),
+            lastRenderedItem = renderedItems[renderedItems.length - 1],
+            minScrollerOffset =  Number.MIN_SAFE_INTEGER,
+            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
 
-        if (renderedItems.length > 0) {
-            if (renderedItems[0].getItemIndex() == 0 && topOffset < renderedItems[0].getItemOffset()) {
-                topOffset = renderedItems[0].getItemOffset();
-                scroller.scrollTo(topOffset);
-                return;
-            }
+        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
+            var minScrollerOffset = renderedItems[0].getItemOffset();
         }
+
+        if (lastRenderedItem && lastRenderedItem.getItemIndex() == maxIndexToRender) {
+                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
+        }
+
+        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+    }
+
+    function render() {
+        var renderedItems;
+
+        updateScroller();
         StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
         needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
         renderedItems = itemsRenderer.getRenderedItems();
@@ -146,14 +157,6 @@ var InfiniteList = function (listConfig) {
         scrollToIndex = null;
         topItemOffset = null;
 
-        if (renderedItems.length > 0 && renderedItems[renderedItems.length - 1].getItemIndex() == maxIndexToRender) {
-            var lastItem = renderedItems[renderedItems.length - 1],
-                maxScrollPos = lastItem.getItemOffset() + lastItem.getItemHeight();
-
-            if (topOffset > maxScrollPos - parentElementHeight) {
-                scroller.scrollTo(maxScrollPos - parentElementHeight);
-            }
-        }
 
         renderedItems.forEach(function(item){
             listItemsHeights[item.getItemIndex()] = item.getItemHeight();

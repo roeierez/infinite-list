@@ -241,17 +241,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
-	    function render() {
+	    function updateScroller() {
 	        var maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
-	            renderedItems = itemsRenderer.getRenderedItems();
+	            renderedItems = itemsRenderer.getRenderedItems(),
+	            lastRenderedItem = renderedItems[renderedItems.length - 1],
+	            minScrollerOffset =  Number.MIN_SAFE_INTEGER,
+	            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
 
-	        if (renderedItems.length > 0) {
-	            if (renderedItems[0].getItemIndex() == 0 && topOffset < renderedItems[0].getItemOffset()) {
-	                topOffset = renderedItems[0].getItemOffset();
-	                scroller.scrollTo(topOffset);
-	                return;
-	            }
+	        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
+	            var minScrollerOffset = renderedItems[0].getItemOffset();
 	        }
+
+	        if (lastRenderedItem && lastRenderedItem.getItemIndex() == maxIndexToRender) {
+	                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
+	        }
+
+	        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	    }
+
+	    function render() {
+	        var renderedItems;
+
+	        updateScroller();
 	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
 	        renderedItems = itemsRenderer.getRenderedItems();
@@ -259,14 +270,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scrollToIndex = null;
 	        topItemOffset = null;
 
-	        if (renderedItems.length > 0 && renderedItems[renderedItems.length - 1].getItemIndex() == maxIndexToRender) {
-	            var lastItem = renderedItems[renderedItems.length - 1],
-	                maxScrollPos = lastItem.getItemOffset() + lastItem.getItemHeight();
-
-	            if (topOffset > maxScrollPos - parentElementHeight) {
-	                scroller.scrollTo(maxScrollPos - parentElementHeight);
-	            }
-	        }
 
 	        renderedItems.forEach(function(item){
 	            listItemsHeights[item.getItemIndex()] = item.getItemHeight();
@@ -516,23 +519,47 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function scroll (y) {
-	        offset = Math.min( Math.max(y, minOffset), maxOffset);
-	        callback(offset);
+	        offset = y;//Math.min( Math.max(y, minOffset), maxOffset);
+	        callback(y);
 	    }
 
 	    function autoScroll () {
-	        var elapsed, delta;
+	        var elapsed, delta, newOffset;
 
 	        if (amplitude) {
 	            elapsed = Date.now() - timestamp;
 	            delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
-	            if (delta > 10 || delta < -10) {
+	            newOffset = target - delta;
+
+	            if (newOffset < minOffset) {
+	                //delta = amplitude * Math.exp(-elapsed / 11000);
+	                if (target - delta >= minOffset-20){
+	                    scroll(minOffset);
+	                    return;
+	                }
+	                bounce(minOffset, delta);
+
+	            } else if (newOffset > maxOffset) {
+	                if (target - delta <= maxOffset + 20){
+	                    scroll(maxOffset);
+	                    return;
+	                }
+	                bounce(maxOffset, delta);
+
+	            } else if (delta > 10 || delta < -10) {
 	                scroll(target - delta);
 	                requestAnimationFrame(autoScroll);
 	            } else {
 	                scroll(target);
 	            }
 	        }
+	    }
+
+	    function bounce (toOffset, delta){
+	        amplitude = amplitude * 0.8;
+	        target = Math.round(toOffset + amplitude);
+	        scroll(target - delta);
+	        requestAnimationFrame(autoScroll);
 	    }
 
 	    function tap (e) {
@@ -556,7 +583,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            delta = reference - y;
 	            if (delta > 2 || delta < -2) {
 	                reference = y;
-	                scroll(offset + delta);
+	                scroll(offset + delta * 0.5);
 	            }
 	        }
 	        e.preventDefault();
@@ -566,6 +593,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        pressed = false;
 
 	        clearInterval(ticker);
+
+	        if (offset < minOffset) {
+	            velocity = -300;
+	        }
 
 	        if (velocity > 10 || velocity < -10) {
 	            amplitude = 0.8 * velocity;
@@ -778,20 +809,27 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function renderBefore(listItem){
 	        var newItem = renderListItem(listItem.getItemIndex() - 1);
-	        newItem.setItemOffset(listItem.getItemOffset() - newItem.getItemHeight());
-	        renderedListItems.unshift(newItem);
+	        if (newItem) {
+	            newItem.setItemOffset(listItem.getItemOffset() - newItem.getItemHeight());
+	            renderedListItems.unshift(newItem);
+	        }
 	        return newItem;
 	    }
 
 	    function renderAfter(listItem){
 	        var newItem = renderListItem(listItem.getItemIndex() + 1);
-	        newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
-	        renderedListItems.push(newItem);
+	        if (newItem) {
+	            newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
+	            renderedListItems.push(newItem);
+	        }
 	        return newItem;
 	    }
 
 	    function renderListItem (index) {
 	        if (index == listConfig.itemsCount) {
+	            if (!listConfig.hasMore) {
+	                return null;
+	            }
 	            return renderLoadMore();
 	        }
 

@@ -29,8 +29,9 @@ window.flickrCallback = function(results){
     for (var i=0; i<aggregatedResults.length; ++i) {
         aggregatedResults[i].index = i;
     }
-    listCallback(results.photos.photo.length, true);
+    listCallback(results.photos.photo.length, false);
 }
+
 var list = new InfiniteList({
 
     itemRenderer: function(index, domElement){
@@ -39,10 +40,6 @@ var list = new InfiniteList({
         };
         React.render(React.createElement(template, aggregatedResults[index]), domElement);
     },
-
-    //itemHeightGetter: function(index) {
-    //    return 200;
-    //},
 
     loadMoreRenderer: function(index, domElement){
         domElement.innerHTML = '<div style="margin-left:14px;height:50px; background-image:url(../resources/loading.gif); background-repeat: no-repeat"><span style="margin-left: 40px">Loading...</span></div>';
@@ -60,9 +57,3 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
-//setTimeout(function(){
-//    list.scrollToItem(94, true);
-//    setTimeout(function(){
-//        list.scrollToItem(0, true);
-//    },2000);
-//},2000);

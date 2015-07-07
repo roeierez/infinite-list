@@ -45,23 +45,46 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function scroll (y) {
-        offset = Math.min( Math.max(y, minOffset), maxOffset);
-        callback(offset);
+        offset = y;//Math.min( Math.max(y, minOffset), maxOffset);
+        callback(y);
     }
 
     function autoScroll () {
-        var elapsed, delta;
+        var elapsed, delta, newOffset;
 
         if (amplitude) {
             elapsed = Date.now() - timestamp;
             delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
-            if (delta > 10 || delta < -10) {
+            newOffset = target - delta;
+
+            if (newOffset < minOffset) {
+                if (target - delta >= minOffset-20){
+                    scroll(minOffset);
+                    return;
+                }
+                bounce(minOffset, delta);
+
+            } else if (newOffset > maxOffset) {
+                if (target - delta <= maxOffset + 20){
+                    scroll(maxOffset);
+                    return;
+                }
+                bounce(maxOffset, delta);
+
+            } else if (delta > 10 || delta < -10) {
                 scroll(target - delta);
                 requestAnimationFrame(autoScroll);
             } else {
                 scroll(target);
             }
         }
+    }
+
+    function bounce (toOffset, delta){
+        amplitude = amplitude * 0.8;
+        target = Math.round(toOffset + amplitude);
+        scroll(target - delta);
+        requestAnimationFrame(autoScroll);
     }
 
     function tap (e) {
@@ -85,7 +108,7 @@ var VerticalScroller = function (parentElement, callback) {
             delta = reference - y;
             if (delta > 2 || delta < -2) {
                 reference = y;
-                scroll(offset + delta);
+                scroll(offset + delta * 0.5);
             }
         }
         e.preventDefault();
@@ -95,6 +118,10 @@ var VerticalScroller = function (parentElement, callback) {
         pressed = false;
 
         clearInterval(ticker);
+
+        if (offset < minOffset) {
+            velocity = -300;
+        }
 
         if (velocity > 10 || velocity < -10) {
             amplitude = 0.8 * velocity;
