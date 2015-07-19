@@ -114,7 +114,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            itemTypeGetter: null,
 	            pageFetcher: null,
 	            loadMoreRenderer: function(index, domElement){
-	                domElement.innerHTML = '<div style="margin-left:14px;height:50px>Loading...</div>';
+	                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
 	            },
 	            hasMore: false,
 	            itemsCount: 0
@@ -236,7 +236,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
 
 	        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
-	            var minScrollerOffset = renderedItems[0].getItemOffset();
+	                minScrollerOffset = renderedItems[0].getItemOffset();
 	        }
 
 	        if (lastRenderedItem && lastRenderedItem.getItemIndex() == maxIndexToRender) {
@@ -280,7 +280,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            config.hasMore = hasMore;
 	            config.itemsCount += pageItemsCount;
 	            calculateHeights(config.itemsCount - pageItemsCount);
-	            render();
+	            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
 	        });
 	    }
 
@@ -459,7 +459,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var SCROLLING_TIME_CONSTANT = 250;
+	var SCROLLING_TIME_CONSTANT = 325;
 
 	var VerticalScroller = function (parentElement, callback) {
 
@@ -519,21 +519,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	            newOffset = target - delta;
 
 	            if (newOffset < minOffset) {
-	                //delta = amplitude * Math.exp(-elapsed / 11000);
-	                if (target - delta >= minOffset-20){
+	                if (target - delta >= minOffset-2){
 	                    scroll(minOffset);
 	                    return;
 	                }
-	                bounce(minOffset, delta);
+
+	                bounce(true);
 
 	            } else if (newOffset > maxOffset) {
-	                if (target - delta <= maxOffset + 20){
+	                if (target - delta <= maxOffset + 2){
 	                    scroll(maxOffset);
 	                    return;
 	                }
-	                bounce(maxOffset, delta);
+	                bounce(false);
 
-	            } else if (delta > 10 || delta < -10) {
+	            } else if (delta > 2 || delta < -2) {
 	                scroll(target - delta);
 	                requestAnimationFrame(autoScroll);
 	            } else {
@@ -542,11 +542,43 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }
 
-	    function bounce (toOffset, delta){
-	        amplitude = amplitude * 0.8;
-	        target = Math.round(toOffset + amplitude);
+	    function bounce (top){
+	        if (amplitude == 0){
+	            return;
+	        }
+	        //console.error('amplitude = ' + amplitude + ' maxoffset = ' + maxOffset + ' target = ' + target + ' offset=' + offset);
+	        var elapsed = Date.now() - timestamp;
+	        var delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
+	        if ( (top && amplitude > 0 || !top && amplitude < 0) && Math.abs(delta) < 2) {
+	            scroll(top ? minOffset : maxOffset);
+	            return;
+	        }
+
 	        scroll(target - delta);
-	        requestAnimationFrame(autoScroll);
+
+	        if (amplitude > 0 && top) {
+	            target = minOffset;
+	            amplitude = (target - offset);
+
+	        } else if (amplitude < 0 && !top) {
+	            target = maxOffset;
+	            amplitude = (target - offset);
+
+	        }
+	        else {
+	            if (top) {
+	                target = minOffset - (minOffset - target) * 0.9;
+	            } else {
+	                target = maxOffset - (maxOffset - target) * 0.9;
+	            }
+	            amplitude = target - offset;
+	            timestamp = new Date();
+	        }
+
+	        requestAnimationFrame(function(){
+	            bounce(top);
+	        });
+	        return;
 	    }
 
 	    function tap (e) {
@@ -581,16 +613,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        clearInterval(ticker);
 
-	        if (offset < minOffset) {
-	            velocity = -300;
-	        }
-
-	        if (velocity > 10 || velocity < -10) {
-	            amplitude = 0.8 * velocity;
-	            target = Math.round(offset + amplitude);
-	            timestamp = Date.now();
-	            requestAnimationFrame(autoScroll);
-	        }
+	        amplitude = 0.8 * velocity;
+	        target = Math.round(offset + amplitude);
+	        timestamp = Date.now();
+	        requestAnimationFrame(autoScroll);
 
 	        e.preventDefault();
 	        e.stopPropagation();
@@ -626,8 +652,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return {
 	        setDimensions: setDimensions,
-	        scrollTo: scrollTo,
-	        changeScrollPosition: changeScrollPosition
+	        scrollTo: scrollTo
 	    }
 	};
 

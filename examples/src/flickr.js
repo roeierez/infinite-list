@@ -29,7 +29,7 @@ window.flickrCallback = function(results){
     for (var i=0; i<aggregatedResults.length; ++i) {
         aggregatedResults[i].index = i;
     }
-    listCallback(results.photos.photo.length, false);
+    listCallback(results.photos.photo.length, true);
 }
 
 var list = new InfiniteList({
@@ -48,6 +48,7 @@ var list = new InfiniteList({
     pageFetcher: function(fromIndex, callback){
         listCallback = callback;
         socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback');
+
     },
 
     initialPage: {

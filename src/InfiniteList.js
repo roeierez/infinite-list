@@ -14,7 +14,7 @@ var InfiniteList = function (listConfig) {
             itemTypeGetter: null,
             pageFetcher: null,
             loadMoreRenderer: function(index, domElement){
-                domElement.innerHTML = '<div style="margin-left:14px;height:50px>Loading...</div>';
+                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
             },
             hasMore: false,
             itemsCount: 0
@@ -136,7 +136,7 @@ var InfiniteList = function (listConfig) {
             maxScrollerOffset = Number.MAX_SAFE_INTEGER;
 
         if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
-            var minScrollerOffset = renderedItems[0].getItemOffset();
+                minScrollerOffset = renderedItems[0].getItemOffset();
         }
 
         if (lastRenderedItem && lastRenderedItem.getItemIndex() == maxIndexToRender) {
@@ -180,7 +180,7 @@ var InfiniteList = function (listConfig) {
             config.hasMore = hasMore;
             config.itemsCount += pageItemsCount;
             calculateHeights(config.itemsCount - pageItemsCount);
-            render();
+            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
         });
     }
 
