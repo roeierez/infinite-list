@@ -14,7 +14,7 @@ In addition this list implements the following:
 
 ## Quick Start
 
-```bash
+```js
 var parentElement = ...
 
 var infiniteList = new InfiniteList(
@@ -40,12 +40,12 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 infinite-list uses a Universal Module Definition so you can use it with both CommonJS and RequireJS.
 
 ### CommonJS
-```
+```js
 require('infinite-list')
 ```
 
 ### RequireJS
-```
+```js
 define(['[path to list project]/dist/InfiniteList.js'], function(list){
   //your code goes here
 });
