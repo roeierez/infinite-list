@@ -53,13 +53,17 @@ define(['[path to list project]/dist/InfiniteList.js'], function(list){
 ```
 
 ### In the Browser
-If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. 
+If you need it as a standalone script that is referenced from your html file then just include `dist/InfiniteList.js` and you have it on the global scope. 
 
 ### In NPM
+```
 npm install infinite-list
+```
 
 ### bower
+```
 bower install infinite-list
+```
 
 ## Examples
 to build the exapmles:
