@@ -8,6 +8,7 @@ The best of them renders to the DOM only what the user sees on screen at a give 
 These techniques are used in this implementation too, but in order to achieve smooth scrolling in a list with complex items with complex DOM, or when the user scrolls fast even on old devices they are not enough.
 
 In addition this list implements the following:
+
 1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
 2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
 3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.
