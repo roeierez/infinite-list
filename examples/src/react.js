@@ -14,13 +14,12 @@ for (var i=0; i<ITEMS_COUNT; ++i){
 
 var list = new InfiniteList({
 
-    itemHeightGetter: function(index){
+    itemHeightGetter: function(){
         return 320;
     },
 
     itemRenderer: function(index, domElement){
         React.render(React.createElement(template, listData[index]), domElement);
-
     },
 
     pageFetcher: function(fromIndex, callback){
