@@ -1,4 +1,4 @@
-var SCROLLING_TIME_CONSTANT = 250;
+var SCROLLING_TIME_CONSTANT = 325;
 
 var VerticalScroller = function (parentElement, callback) {
 
@@ -46,23 +46,79 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function scroll (y) {
-        offset = Math.min( Math.max(y, minOffset), maxOffset);
-        callback(offset);
+        offset = y;//Math.min( Math.max(y, minOffset), maxOffset);
+        callback(y);
     }
 
     function autoScroll () {
-        var elapsed, delta;
+        var elapsed, delta, newOffset;
 
         if (amplitude) {
             elapsed = Date.now() - timestamp;
             delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
-            if (delta > 10 || delta < -10) {
+            newOffset = target - delta;
+
+            if (newOffset < minOffset) {
+                if (target - delta >= minOffset-2){
+                    scroll(minOffset);
+                    return;
+                }
+
+                bounce(true);
+
+            } else if (newOffset > maxOffset) {
+                if (target - delta <= maxOffset + 2){
+                    scroll(maxOffset);
+                    return;
+                }
+                bounce(false);
+
+            } else if (delta > 2 || delta < -2) {
                 scroll(target - delta);
                 requestAnimationFrame(autoScroll);
             } else {
                 scroll(target);
             }
         }
+    }
+
+    function bounce (top){
+        if (amplitude == 0){
+            return;
+        }
+        //console.error('amplitude = ' + amplitude + ' maxoffset = ' + maxOffset + ' target = ' + target + ' offset=' + offset);
+        var elapsed = Date.now() - timestamp;
+        var delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
+        if ( (top && amplitude > 0 || !top && amplitude < 0) && Math.abs(delta) < 2) {
+            scroll(top ? minOffset : maxOffset);
+            return;
+        }
+
+        scroll(target - delta);
+
+        if (amplitude > 0 && top) {
+            target = minOffset;
+            amplitude = (target - offset);
+
+        } else if (amplitude < 0 && !top) {
+            target = maxOffset;
+            amplitude = (target - offset);
+
+        }
+        else {
+            if (top) {
+                target = minOffset - (minOffset - target) * 0.9;
+            } else {
+                target = maxOffset - (maxOffset - target) * 0.9;
+            }
+            amplitude = target - offset;
+            timestamp = new Date();
+        }
+
+        requestAnimationFrame(function(){
+            bounce(top);
+        });
+        return;
     }
 
     function tap (e) {
@@ -88,7 +144,7 @@ var VerticalScroller = function (parentElement, callback) {
             delta = reference - y;
             if (delta > 2 || delta < -2) {
                 reference = y;
-                scroll(offset + delta);
+                scroll(offset + delta * 0.5);
             }
         }
         e.preventDefault();
@@ -129,20 +185,32 @@ var VerticalScroller = function (parentElement, callback) {
 
         clearInterval(ticker);
 
-        if (velocity > 10 || velocity < -10) {
-            amplitude = 0.8 * velocity;
-            target = Math.round(offset + amplitude);
-            timestamp = Date.now();
-            requestAnimationFrame(autoScroll);
-        }
+        amplitude = 0.8 * velocity;
+        target = Math.round(offset + amplitude);
+        timestamp = Date.now();
+        requestAnimationFrame(autoScroll);
 
         e.preventDefault();
         e.stopPropagation();
     }
 
-    function scrollTo(y){
-        amplitude = 0;
-        scroll(y);
+    function scrollTo(y, animate){
+        var maxAnimateDelta = 4000;
+        if (animate) {
+            if (y - offset > maxAnimateDelta) {
+                offset = y - maxAnimateDelta;
+            } else if (offset - y > maxAnimateDelta) {
+                offset = y + maxAnimateDelta;
+            }
+
+            amplitude = y - offset;
+            target = y;
+            timestamp = Date.now();
+            requestAnimationFrame(autoScroll);
+        } else {
+            amplitude = 0;
+            scroll(y);
+        }
     }
 
     function changeScrollPosition (y) {
@@ -156,8 +224,7 @@ var VerticalScroller = function (parentElement, callback) {
 
     return {
         setDimensions: setDimensions,
-        scrollTo: scrollTo,
-        changeScrollPosition: changeScrollPosition
+        scrollTo: scrollTo
     }
 };
 

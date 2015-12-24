@@ -31,6 +31,7 @@ window.flickrCallback = function(results){
     }
     listCallback(results.photos.photo.length, true);
 }
+
 var list = new InfiniteList({
 
     itemRenderer: function(index, domElement){

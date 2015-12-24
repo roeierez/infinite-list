@@ -66,20 +66,27 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
 
     function renderBefore(listItem){
         var newItem = renderListItem(listItem.getItemIndex() - 1);
-        newItem.setItemOffset(listItem.getItemOffset() - newItem.getItemHeight());
-        renderedListItems.unshift(newItem);
+        if (newItem) {
+            newItem.setItemOffset(listItem.getItemOffset() - newItem.getItemHeight());
+            renderedListItems.unshift(newItem);
+        }
         return newItem;
     }
 
     function renderAfter(listItem){
         var newItem = renderListItem(listItem.getItemIndex() + 1);
-        newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
-        renderedListItems.push(newItem);
+        if (newItem) {
+            newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
+            renderedListItems.push(newItem);
+        }
         return newItem;
     }
 
     function renderListItem (index) {
         if (index == listConfig.itemsCount) {
+            if (!listConfig.hasMore) {
+                return null;
+            }
             return renderLoadMore();
         }
 
@@ -124,10 +131,6 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
             layersPool.addLayer(layer, true)
         });
         renderedListItems = [];
-    }
-
-    function isBusy(){
-        return AnimationFrameHelper.getFPS() < MIN_FPS;
     }
 
    function getRenderedItems(){

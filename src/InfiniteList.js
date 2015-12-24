@@ -14,7 +14,7 @@ var InfiniteList = function (listConfig) {
             itemTypeGetter: null,
             pageFetcher: null,
             loadMoreRenderer: function(index, domElement){
-                domElement.innerHTML = '<div style="margin-left:14px;height:50px>Loading...</div>';
+                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
             },
             hasMore: false,
             itemsCount: 0
@@ -26,9 +26,7 @@ var InfiniteList = function (listConfig) {
         scrollbarRenderer = null,
         itemsRenderer = null,
         scroller = null,
-        offsetDelta = 5000,
-        listItemsOffsets = [],
-        adjustedItems = {},
+        listItemsHeights = [],
         topOffset = 0,
         scrollToIndex = 0,
         topItemOffset = 0,
@@ -86,16 +84,11 @@ var InfiniteList = function (listConfig) {
     }
 
     function calculateHeights(fromIndex) {
-        if (!fromIndex) {
-            listItemsOffsets = [offsetDelta];
-            fromIndex = 1;
+        if (config.itemHeightGetter) {
+            for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
+                listItemsHeights[i] = config.itemHeightGetter(i);
+            }
         }
-
-        for (var i = fromIndex; i <= config.itemsCount || 0; ++i) {
-            var currentRowHeight = config.itemHeightGetter ? config.itemHeightGetter(i - 1) : DEFAULT_ITEM_HEIGHT;
-            listItemsOffsets[i] = listItemsOffsets[i - 1] + currentRowHeight;
-        }
-        adjustedItems = {};
     }
 
     function initializeRootElement(parentElement) {
@@ -132,59 +125,54 @@ var InfiniteList = function (listConfig) {
         itemsRenderer.refresh();
         calculateHeights();
         scrollbarRenderer.refresh();
-        scrollToItem(topListItemIndex, differenceFromTop);
+        scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
-    function getListHeight(){
-        var renderedItems = itemsRenderer.getRenderedItems(),
-            maxRenderedItem = renderedItems && renderedItems[renderedItems.length - 1],
-            currentHeight = maxRenderedItem && (maxRenderedItem.getItemOffset() + maxRenderedItem.getItemHeight()) ||  Number.MIN_SAFE_INTEGER;
+    function updateScroller() {
+        var maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
+            renderedItems = itemsRenderer.getRenderedItems(),
+            lastRenderedItem = renderedItems[renderedItems.length - 1],
+            minScrollerOffset =  Number.MIN_SAFE_INTEGER,
+            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
 
-        return Math.max(currentHeight, listItemsOffsets[listItemsOffsets.length - 1] + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT));
+        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
+                minScrollerOffset = renderedItems[0].getItemOffset();
+        }
+
+        if (lastRenderedItem && lastRenderedItem.getItemIndex() == maxIndexToRender) {
+                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
+        }
+
+        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
     }
 
     function render() {
-        var topItem = null,
-            maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
-            bottomItem = null,
-            renderedItems = itemsRenderer.getRenderedItems();
+        var renderedItems;
 
-        if (renderedItems.length > 0) {
-            if (renderedItems[0].getItemIndex() == 0 && topOffset < renderedItems[0].getItemOffset()) {
-                topOffset = renderedItems[0].getItemOffset();
-                scroller.scrollTo(topOffset);
-                return;
-            }
-        }
+        updateScroller();
         StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
-        scrollbarRenderer.render(topOffset, getListHeight());
         needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
         renderedItems = itemsRenderer.getRenderedItems();
-
-
-        if (renderedItems.length > 0) {
-            topItem = renderedItems[0];
-            bottomItem = renderedItems[renderedItems.length - 1];
-
-            shiftItemOffsetIfNeeded(topItem.getItemIndex(), topItem.getItemOffset());
-            shiftItemOffsetIfNeeded(bottomItem.getItemIndex() + 1, bottomItem.getItemOffset() + bottomItem.getItemHeight());
-        }
-
-        for (var i = 1; i < renderedItems.length - 1; ++i) {
-            listItemsOffsets[renderedItems[i].getItemIndex()] = renderedItems[i].getItemOffset();
-        }
 
         scrollToIndex = null;
         topItemOffset = null;
 
-        if (renderedItems.length > 0 && renderedItems[renderedItems.length - 1].getItemIndex() == maxIndexToRender) {
-            var lastItem = renderedItems[renderedItems.length - 1],
-                maxScrollPos = lastItem.getItemOffset() + lastItem.getItemHeight();
 
-            if (topOffset > maxScrollPos - parentElementHeight) {
-                scroller.scrollTo(maxScrollPos - parentElementHeight);
+        renderedItems.forEach(function(item){
+            listItemsHeights[item.getItemIndex()] = item.getItemHeight();
+        });
+
+        var avarageItemHeight = 0,
+            itemsCount = 0;
+        for (var i=0; i<listItemsHeights.length; ++i) {
+            if (typeof listItemsHeights[i] == 'number') {
+
+                avarageItemHeight += listItemsHeights[i];
+                itemsCount++;
             }
         }
+        avarageItemHeight = avarageItemHeight / itemsCount;
+        scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
     }
 
     function loadMoreCallback(){
@@ -192,19 +180,27 @@ var InfiniteList = function (listConfig) {
             config.hasMore = hasMore;
             config.itemsCount += pageItemsCount;
             calculateHeights(config.itemsCount - pageItemsCount);
-            render();
+            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
         });
     }
 
-    function scrollToItem(index, relativeOffset, animate) {
+    function scrollToItem(index, animate, relativeOffset) {
+        var targetPosition = 0;
+        if (config.itemHeightGetter) {
+            for (var i=0; i<index; ++i){
+                targetPosition += config.itemHeightGetter(i);
+            }
+        } else {
+            scrollToIndex = index;
+        }
         topItemOffset = relativeOffset || 0;
-        scrollToIndex = index;
-        scroller.scrollTo(0, animate);
+        scroller.scrollTo( targetPosition, config.itemHeightGetter && animate);
     }
 
     function refreshItemHeight(index){
 
-        var renderedListItem = itemsRenderer.getRenderedItems().filter(function(rItem){
+        var renderedItems = itemsRenderer.getRenderedItems();
+        var renderedListItem = renderedItems.filter(function(rItem){
             return rItem.getItemIndex() == index;
         })[0];
 
@@ -219,52 +215,21 @@ var InfiniteList = function (listConfig) {
 
             renderedListItem.setItemHeight(newHeight);
 
+            var itemRenderIndex = renderedListItem.getItemIndex() - renderedItems[0].getItemIndex();
+            var nextItem = renderedItems[itemRenderIndex + 1];
             if (renderedListItem.getItemOffset() < topOffset) {
-                shiftTopOffsets(index, listItemsOffsets[index + 1] - newHeight);
+                while (nextItem && renderedListItem){
+                    renderedListItem.setItemOffset(nextItem.getItemOffset() - renderedListItem.getItemHeight());
+                    nextItem = renderedListItem;
+                    renderedListItem = renderedItems[--itemRenderIndex];
+                }
             } else {
-                shiftBottomOffsets(index + 1, startOffset + newHeight);
-            }
-        }
-    }
-
-    function shiftItemOffsetIfNeeded(itemIndex, itemOffset) {
-        var renderedListItems = itemsRenderer.getRenderedItems(),
-            listItem = renderedListItems.filter(function(rItem){
-                return rItem.getItemIndex() == itemIndex;
-            })[0];
-
-        var topShift = renderedListItems.length == 0 || renderedListItems[0].getItemIndex() > itemIndex || (listItem && listItem.getItemOffset() < topOffset);
-        (topShift ? shiftTopOffsets : shiftBottomOffsets)(itemIndex, itemOffset);
-    }
-
-    function shiftTopOffsets(itemIndex, itemOffset) {
-        var shiftTop = itemOffset - listItemsOffsets[itemIndex];
-        if (shiftTop != 0) {
-            for (var i = itemIndex; i >= 0; --i) {
-                updateItemOffset(i, listItemsOffsets[i] + shiftTop);
-            }
-        }
-    }
-
-    function shiftBottomOffsets(itemIndex, itemOffset) {
-        if (itemIndex < listItemsOffsets.length) {
-            var shiftBottom = itemOffset - listItemsOffsets[itemIndex];
-            if (shiftBottom != 0) {
-                for (var i = itemIndex; i < listItemsOffsets.length; ++i) {
-                    updateItemOffset(i, listItemsOffsets[i] + shiftBottom);
+                while (nextItem && renderedListItem){
+                    nextItem.setItemOffset(renderedListItem.getItemOffset() + renderedListItem.getItemHeight());
+                    renderedListItem = nextItem;
+                    nextItem = renderedItems[++itemRenderIndex + 1];
                 }
             }
-        }
-    }
-
-    function updateItemOffset(itemIndex, newOffset) {
-        var renderedItems = itemsRenderer.getRenderedItems(),
-            firstRenderedItem = itemsRenderer.getRenderedItems()[0],
-            firstRenderedIndex = firstRenderedItem && firstRenderedItem.getItemIndex() || 0;
-
-        listItemsOffsets[itemIndex]  = newOffset;
-        if (renderedItems[itemIndex - firstRenderedIndex]) {
-            renderedItems[itemIndex - firstRenderedIndex].setItemOffset(newOffset);
         }
     }
 

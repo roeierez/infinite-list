@@ -16,15 +16,8 @@ var pageNum = 0,
 
 var list = new InfiniteList({
 
-    itemHeightGetter: function(index){
-        return (heights[index]) || 300;
-       // return 300;
-    },
-
     itemRenderer: function(index, domElement){
-        var el = React.render(React.createElement(template, listData[index]), domElement);
-      //  heights[index] = el.getDOMNode().clientHeight;
-       // list.itemHeightChangedAtIndex(index);
+        React.render(React.createElement(template, listData[index]), domElement);
     },
 
     pageFetcher: function(fromIndex, callback){
@@ -45,14 +38,4 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
-//setTimeout(function(){
-//    heights[1] = 500;
-//    list.refreshItemHeight(1);
-//    //list.scrollToItem(4);
-//    //setTimeout(function(){
-//    //    var pos = list.getPosition();
-//    //    list.scrollTo(pos - 309 * 2 );
-//    //}, 2000);
-//    //list.refresh();
-//},3000);
 
