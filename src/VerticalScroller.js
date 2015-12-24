@@ -12,7 +12,8 @@ var VerticalScroller = function (parentElement, callback) {
         ticker = 0,
         reference = 0,
         offset = 0,
-        target = 0;
+        target = 0,
+        touchPositions = [];
 
     parentElement.addEventListener('touchstart', tap);
     parentElement.addEventListener('touchmove', drag);
@@ -71,6 +72,7 @@ var VerticalScroller = function (parentElement, callback) {
         velocity = amplitude = 0;
         frame = offset;
         timestamp = Date.now();
+        recordTouches(e);
         clearInterval(ticker);
         ticker = setInterval(track, 10);
 
@@ -81,6 +83,7 @@ var VerticalScroller = function (parentElement, callback) {
     function drag (e) {
         var y, delta;
         if (pressed) {
+            recordTouches(e);
             y = ypos(e);
             delta = reference - y;
             if (delta > 2 || delta < -2) {
@@ -91,8 +94,38 @@ var VerticalScroller = function (parentElement, callback) {
         e.preventDefault();
         e.stopPropagation();
     }
+
+    function recordTouches(e) {
+        var touches = e.touches,
+            timestamp = e.timeStamp,
+            currentTouchTop = touches[0].pageY;
+
+        if (touches.length === 2) {
+            currentTouchTop = Math.abs(touches[0].pageY + touches[1].pageY) / 2;
+        }
+
+        touchPositions.push({offset: currentTouchTop, timestamp: timestamp});
+        if (touchPositions.length > 60) {
+            touchPositions.splice(0, 30);
+        }
+    }
+
     function release (e) {
         pressed = false;
+
+        // var endPos = touchPositions.length - 1;
+        // var startPos = endPos - 1;
+        //
+        // // Move pointer to position measured 100ms ago
+        // for (var i = endPos - 1; i > 0 && touchPositions[i].timestamp > (touchPositions[endPos].timestamp - 100); i -= 1) {
+        //     startPos = i;
+        // }
+        //
+        // var elapsed = touchPositions[endPos].timestamp - touchPositions[startPos].timestamp;
+        // var delta = touchPositions[endPos].offset - touchPositions[startPos].offset;
+        //
+        // var v = -1000 * delta / (1 + elapsed);
+        // velocity = 0.8 * v + 0.2 * velocity;
 
         clearInterval(ticker);
 
