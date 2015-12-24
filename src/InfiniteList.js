@@ -1,5 +1,4 @@
-var TouchScroller = require('./TouchScroller'),
-    VerticalScroller = require('./VerticalScroller'),
+var VerticalScroller = require('./VerticalScroller'),
     ScrollbarRenderer = require('./ScrollbarRenderer'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     ListItemsRenderer = require('./ListItemsRenderer'),
