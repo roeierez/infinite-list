@@ -129,8 +129,8 @@ var VerticalScroller = function (parentElement, callback) {
         frame = offset;
         timestamp = Date.now();
         recordTouches(e);
-        clearInterval(ticker);
-        ticker = setInterval(track, 10);
+        // clearInterval(ticker);
+        // ticker = setInterval(track, 10);
 
         e.preventDefault();
         e.stopPropagation();
@@ -169,19 +169,19 @@ var VerticalScroller = function (parentElement, callback) {
     function release (e) {
         pressed = false;
 
-        // var endPos = touchPositions.length - 1;
-        // var startPos = endPos - 1;
-        //
-        // // Move pointer to position measured 100ms ago
-        // for (var i = endPos - 1; i > 0 && touchPositions[i].timestamp > (touchPositions[endPos].timestamp - 100); i -= 1) {
-        //     startPos = i;
-        // }
-        //
-        // var elapsed = touchPositions[endPos].timestamp - touchPositions[startPos].timestamp;
-        // var delta = touchPositions[endPos].offset - touchPositions[startPos].offset;
-        //
-        // var v = -1000 * delta / (1 + elapsed);
-        // velocity = 0.8 * v + 0.2 * velocity;
+        var endPos = touchPositions.length - 1;
+        var startPos = endPos - 1;
+
+        // Move pointer to position measured 100ms ago
+        for (var i = endPos - 1; i > 0 && touchPositions[i].timestamp > (touchPositions[endPos].timestamp - 100); i -= 1) {
+            startPos = i;
+        }
+
+        var elapsed = touchPositions[endPos].timestamp - touchPositions[startPos].timestamp;
+        var delta = touchPositions[endPos].offset - touchPositions[startPos].offset;
+
+        var v = -1000 * delta / (1 + elapsed);
+        velocity = 0.8 * v + 0.2 * velocity;
 
         clearInterval(ticker);
 
