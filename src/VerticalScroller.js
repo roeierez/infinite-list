@@ -8,8 +8,7 @@ var VerticalScroller = function (parentElement, callback) {
         frame = 0,
         velocity = 0,
         amplitude = 0,
-        pressed = 0,
-        ticker = 0,
+        pressed = 0,        
         reference = 0,
         offset = 0,
         target = 0,
@@ -30,19 +29,6 @@ var VerticalScroller = function (parentElement, callback) {
 
         // mouse event
         return e.clientY;
-    }
-
-    function track () {
-        var now, elapsed, delta, v;
-
-        now = Date.now();
-        elapsed = now - timestamp;
-        timestamp = now;
-        delta = offset - frame;
-        frame = offset;
-
-        v = 1000 * delta / (1 + elapsed);
-        velocity = 0.8 * v + 0.2 * velocity;
     }
 
     function scroll (y) {
@@ -84,60 +70,33 @@ var VerticalScroller = function (parentElement, callback) {
 
     function bounce (top){
 
-        // if (amplitude < 0 && amplitude > -0.1) {
-        //     amplitude = -offset * 100;
-        // }
+        var finalDestination = top ? minOffset : maxOffset,
+            isBouncingBack = top && amplitude > 0 || !top && amplitude < 0;
+
         if (amplitude == 0){
             return;
         }
 
-        // scroll(offset + amplitude / 100);
-        // amplitude *= 0.83;
-        // requestAnimationFrame(function(){
-        //     bounce(top);
-        // });
-        // return;
-
-        //console.error('amplitude = ' + amplitude + ' maxoffset = ' + maxOffset + ' target = ' + target + ' offset=' + offset);
         var elapsed = Date.now() - timestamp;
-        var delta = amplitude * Math.exp(-elapsed / (target == minOffset ? 125 : SCROLLING_TIME_CONSTANT) );
-        if ( (top && amplitude > 0 || !top && amplitude < 0) && Math.abs(delta) < 2 ) {
+        var delta = amplitude * Math.exp(-elapsed / (target == finalDestination ? 125 : SCROLLING_TIME_CONSTANT) );
+
+        if ( isBouncingBack && Math.abs(delta) < 2 ) {
             scroll(top ? minOffset : maxOffset);
             return;
         }
 
-        scroll(target - delta);
-        var finalDestination = top ? minOffset : maxOffset;
+        scroll(target - delta);        
 
-        if (amplitude > 0 && top || amplitude < 0 && !top) {
+        if (isBouncingBack) {
             if (target != finalDestination) {
                 target = finalDestination;
                 amplitude = target - offset;    
                 timestamp = new Date();
             }
 
-        } else if (amplitude < 0 && !top) {
-            target = maxOffset;
-            amplitude = (target - offset);
-
-        }
-        else {
-            if (top) {
-                if (offset <= target) {
-                    // if (target != minOffset) {
-                    //     target = minOffset;
-                    //     amplitude = target - offset;    
-                    //     timestamp = new Date();
-                    // }
-                    
-                } else {
-                    target = minOffset - (minOffset - target) * 0.1;
-                    amplitude = target - offset;
-                    timestamp = new Date();
-                }
-            } else {
-                target = maxOffset - (maxOffset - target) * 0.1;
-            }
+        } else {
+            target = finalDestination - (finalDestination - target) * 0.1;
+            amplitude = target - offset;            
             
         }
 
@@ -155,8 +114,6 @@ var VerticalScroller = function (parentElement, callback) {
         frame = offset;
         timestamp = Date.now();
         recordTouches(e);
-        // clearInterval(ticker);
-        // ticker = setInterval(track, 10);
 
         e.preventDefault();
         e.stopPropagation();
@@ -208,8 +165,6 @@ var VerticalScroller = function (parentElement, callback) {
 
         var v = -1000 * delta / (1 + elapsed);
         velocity = 0.8 * v + 0.2 * velocity;
-
-        clearInterval(ticker);
 
         amplitude = 1.0 * velocity;
         target = Math.round(offset + amplitude);
