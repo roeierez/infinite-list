@@ -11,8 +11,7 @@ for (var i=0; i<ITEMS_COUNT; ++i){
     });
 }
 
-var pageNum = 0,
-    heights = {};
+var pageNum = 0;
 
 var list = new InfiniteList({
 

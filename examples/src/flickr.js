@@ -2,7 +2,7 @@ var InfiniteList = require('../../src/InfiniteList'),
     template = require('./flickrTemlpate.jsx');
 
 var socialGetter = (function() {
-    /* just a utility to do the script injection */
+    
     function injectScript(url) {
         var script = document.createElement('script');
         script.async = true;
@@ -11,9 +11,6 @@ var socialGetter = (function() {
     }
 
     return {
-        getFacebookCount: function(url, callbackName) {
-            injectScript('https://graph.facebook.com/?id=' + url + '&callback=' + callbackName);
-        },
         getFlickrPage: function(pageNum, callbackName) {
             injectScript('https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&per_page=100&api_key=3b7455f86113e9b01fc8ec08b413c40a&format=json&page=' + pageNum + '&jsoncallback=' + callbackName);
         }

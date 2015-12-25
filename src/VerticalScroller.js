@@ -83,22 +83,38 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function bounce (top){
+
+        // if (amplitude < 0 && amplitude > -0.1) {
+        //     amplitude = -offset * 100;
+        // }
         if (amplitude == 0){
             return;
         }
+
+        // scroll(offset + amplitude / 100);
+        // amplitude *= 0.83;
+        // requestAnimationFrame(function(){
+        //     bounce(top);
+        // });
+        // return;
+
         //console.error('amplitude = ' + amplitude + ' maxoffset = ' + maxOffset + ' target = ' + target + ' offset=' + offset);
         var elapsed = Date.now() - timestamp;
-        var delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
-        if ( (top && amplitude > 0 || !top && amplitude < 0) && Math.abs(delta) < 2) {
+        var delta = amplitude * Math.exp(-elapsed / (target == minOffset ? 125 : SCROLLING_TIME_CONSTANT) );
+        if ( (top && amplitude > 0 || !top && amplitude < 0) && Math.abs(delta) < 2 ) {
             scroll(top ? minOffset : maxOffset);
             return;
         }
 
         scroll(target - delta);
+        var finalDestination = top ? minOffset : maxOffset;
 
-        if (amplitude > 0 && top) {
-            target = minOffset;
-            amplitude = (target - offset);
+        if (amplitude > 0 && top || amplitude < 0 && !top) {
+            if (target != finalDestination) {
+                target = finalDestination;
+                amplitude = target - offset;    
+                timestamp = new Date();
+            }
 
         } else if (amplitude < 0 && !top) {
             target = maxOffset;
@@ -107,12 +123,22 @@ var VerticalScroller = function (parentElement, callback) {
         }
         else {
             if (top) {
-                target = minOffset - (minOffset - target) * 0.9;
+                if (offset <= target) {
+                    // if (target != minOffset) {
+                    //     target = minOffset;
+                    //     amplitude = target - offset;    
+                    //     timestamp = new Date();
+                    // }
+                    
+                } else {
+                    target = minOffset - (minOffset - target) * 0.1;
+                    amplitude = target - offset;
+                    timestamp = new Date();
+                }
             } else {
-                target = maxOffset - (maxOffset - target) * 0.9;
+                target = maxOffset - (maxOffset - target) * 0.1;
             }
-            amplitude = target - offset;
-            timestamp = new Date();
+            
         }
 
         requestAnimationFrame(function(){
@@ -137,14 +163,14 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function drag (e) {
-        var y, delta;
+        var y, delta, scaleFactor = offset < minOffset || offset > maxOffset ? 0.5 : 1;
         if (pressed) {
             recordTouches(e);
             y = ypos(e);
             delta = reference - y;
             if (delta > 2 || delta < -2) {
-                reference = y;
-                scroll(offset + delta * 0.5);
+                reference = y;                
+                scroll(offset + delta * scaleFactor);
             }
         }
         e.preventDefault();
@@ -152,7 +178,7 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function recordTouches(e) {
-        var touches = e.touches,
+        var touches = e.touches || [{pageX: e.pageX, pageY: e.pageY}],
             timestamp = e.timeStamp,
             currentTouchTop = touches[0].pageY;
 
@@ -185,7 +211,7 @@ var VerticalScroller = function (parentElement, callback) {
 
         clearInterval(ticker);
 
-        amplitude = 0.8 * velocity;
+        amplitude = 1.0 * velocity;
         target = Math.round(offset + amplitude);
         timestamp = Date.now();
         requestAnimationFrame(autoScroll);
