@@ -127,3 +127,4 @@ A function that tells the list to re-calculate the height of the item by its ind
 It is usefull when the list items are changing after they are first rendered, for example when images
 with unknown sizes are downloaded and rendered. In this use case you might want to call this function after the 
 image has loaded and the size is known.
+For an example of how to use this method you can browser for the 'flickr' example in the examples directory.
