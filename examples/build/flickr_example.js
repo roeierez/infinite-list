@@ -54,61 +54,79 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(4);
+	module.exports = __webpack_require__(5);
 
 
 /***/ },
 /* 1 */,
 /* 2 */,
 /* 3 */,
-/* 4 */
+/* 4 */,
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var InfiniteList = __webpack_require__(6),
-	    template = __webpack_require__(7),
-	    listData = [],
-	    ITEMS_COUNT = 10000;
+	    template = __webpack_require__(8);
 
-	for (var i=0; i<ITEMS_COUNT; ++i){
-	    listData.push({
-	        header: 'Tweet number ' + (i + 1),
-	        minutesAgo: i % 20 + 1,
-	        tweetText: 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen'
-	    });
+	var socialGetter = (function() {
+	    /* just a utility to do the script injection */
+	    function injectScript(url) {
+	        var script = document.createElement('script');
+	        script.async = true;
+	        script.src = url;
+	        document.body.appendChild(script);
+	    }
+
+	    return {
+	        getFacebookCount: function(url, callbackName) {
+	            injectScript('https://graph.facebook.com/?id=' + url + '&callback=' + callbackName);
+	        },
+	        getFlickrPage: function(pageNum, callbackName) {
+	            injectScript('https://api.flickr.com/services/rest/?method=flickr.photos.getRecent&per_page=100&api_key=3b7455f86113e9b01fc8ec08b413c40a&format=json&page=' + pageNum + '&jsoncallback=' + callbackName);
+	        }
+	    };
+	})();
+
+
+	var listCallback = null,
+	    aggregatedResults = [];
+
+	window.flickrCallback = function(results){
+	    aggregatedResults = aggregatedResults.concat(results.photos.photo);
+	    for (var i=0; i<aggregatedResults.length; ++i) {
+	        aggregatedResults[i].index = i;
+	    }
+	    listCallback(results.photos.photo.length, true);
 	}
-
-	var pageNum = 0,
-	    heights = {};
 
 	var list = new InfiniteList({
 
 	    itemRenderer: function(index, domElement){
-	        React.render(React.createElement(template, listData[index]), domElement);
+	        aggregatedResults[index].onImageLoaded = function(){
+	            list.refreshItemHeight(index);
+	        };
+	        React.render(React.createElement(template, aggregatedResults[index]), domElement);
+	    },
+
+	    loadMoreRenderer: function(index, domElement){
+	        domElement.innerHTML = '<div style="margin-left:14px;height:50px; background-image:url(../resources/loading.gif); background-repeat: no-repeat"><span style="margin-left: 40px">Loading...</span></div>';
 	    },
 
 	    pageFetcher: function(fromIndex, callback){
-	        if (fromIndex == ITEMS_COUNT){
-	            callback(0, false);
-	            return;
-	        }
+	        listCallback = callback;
+	        socialGetter.getFlickrPage(fromIndex / 100 + 1, 'flickrCallback');
 
-	        setTimeout(function(){
-	            callback(10, true);
-	        }, 2000);
 	    },
 
 	    initialPage: {
 	        hasMore: true,
-	        itemsCount: 10
+	        itemsCount: 0
 	    }
 
 	});
 	list.attach(document.getElementById('main'));
 
-
-
 /***/ },
-/* 5 */,
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -360,51 +378,44 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = InfiniteList;
 
 /***/ },
-/* 7 */
+/* 7 */,
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var template = React.createClass({displayName: "template",
+
+	    getInitialState: function(){
+	        return {imageLoaded: false};
+	    },
+
 	    render: function(){
-	        return React.createElement("article", null, 
-	                React.createElement("div", {className: "title"}, 
-	                    React.createElement("div", {className: "title-image"}, 
-	                        React.createElement("img", {src: "../resources/bird.jpg", style: {width: '30px', height: '30px'}, className: "img"})
+	        return  React.createElement("article", {syle: "height: 200px"}, 
+	                    React.createElement("div", {className: "title"}, 
+	                        this.props.title
 	                    ), 
-	                    React.createElement("div", {className: "titleAndTime"}, 
-	                        React.createElement("a", {href: "", className: "title-text"}, 
-	                            this.props.header
-	                        ), 
-	                        React.createElement("span", {className: "title-time"}, 
-	                            this.props.minutesAgo, " minutes ago"
-	                        )
-	                    )
-	                ), 
-	                React.createElement("p", {className: "message-body"}, 
-	                    this.props.tweetText
-	                ), 
-	                React.createElement("div", null
-	                ), 
-	                React.createElement("footer", {className: "footer"}, 
-	                    React.createElement("a", {href: "", className: "feedback", style: {position: 'relative'}}, 
-	                        React.createElement("img", {src: "../resources/like-gray.png", style: {width: '20px', height: '20px', position: 'absolute', top: '0px', left: '0px'}}), 
-	                        React.createElement("span", {className: "myFeedback"}), 
-	                        "Liked"
-	                    ), 
-	                    React.createElement("span", {className: "feedback-summary"}, 
-	                        "1 like"
-	                    ), 
-	                    React.createElement("span", {className: "feedback-summary"}, 
-	                        "2 comments"
-	                    )
+	                    React.createElement("span", {style: {backgroundImage: "url('../resources/loading.gif')", backgroundRepeat: 'no-repeat', backgroundPosition: 'center', width: '200px', height: '100px', display: this.state.imageLoaded ? 'none' : 'block'}}, " "), 
+	                    React.createElement("img", {style: {display: this.state.imageLoaded ? 'block' : 'none'}, onLoad: this.onImageLoaded, src: "https://farm" + this.props.farm + ".staticflickr.com/" + this.props.server + "/" + this.props.id + "_" + this.props.secret + "_n.jpg"})
 	                )
-	            )
+	    },
+	    componentWillReceiveProps: function(nextProps){
+	        if (this.props.id != nextProps.id) {
+	            this.setState({imageLoaded: false});
+	        }
+	    },
+
+	    onImageLoaded: function(){
+	        var me = this;
+	        this.setState({imageLoaded: true}, function(){
+	            if (me.props.onImageLoaded) {
+	                me.props.onImageLoaded();
+	            }
+	        });
 	    }
 	});
 
 	module.exports = template;
 
 /***/ },
-/* 8 */,
 /* 9 */
 /***/ function(module, exports, __webpack_require__) {
 

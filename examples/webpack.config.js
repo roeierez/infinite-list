@@ -4,7 +4,8 @@ module.exports = {
         simple: ['./src/simple.js'],
         recycling: ['./src/recycling.js'],
         paging: ['./src/paging.js'],
-        react: ['./src/react.js']
+        react: ['./src/react.js'],
+        flickr: ['./src/flickr.js']
     },
     output: {
         path: './build',

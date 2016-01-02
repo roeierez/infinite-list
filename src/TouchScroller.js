@@ -88,9 +88,14 @@ var TouchScroller = function(parentElement, callback, givenTouchProvider){
         scroller.scrollTo.apply(scroller, arguments);
     }
 
+    function changeScrollPosition (newPos){
+        scroller.__scrollTop = newPos;
+    }
+
     return {
         disconnect: disconnect,
         setDimensions: setDimensions,
+        changeScrollPosition: changeScrollPosition,
         scrollTo: scrollTo
     }
 }

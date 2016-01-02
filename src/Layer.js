@@ -3,18 +3,23 @@ var StyleHelpers = require('./StyleHelpers');
 var Layer = function (parentElement) {
     var listItemElement = null,
         identifier = "",
-        itemIndex = -1;
+        currentOffset = -1,
+        itemIndex = -1,
+        itemHeight = 0;
 
     listItemElement = createListItemWrapperElement();
     parentElement.appendChild(listItemElement);
 
-    function attach(index, topOffset, width, height, itemIdentifier) {
+    function attach(index, width, height, itemIdentifier) {
         itemIndex = index;
+        itemHeight = height;
         StyleHelpers.applyElementStyle(listItemElement, {
             width: width + 'px',
-            height: (height || DEFAULT_ITEM_HEIGHT) + 'px'
+            height: height + 'px',
+            overflow: 'hidden'
         });
-        StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + topOffset + ', 0, 1)');
+        itemHeight = height;
+       // setItemOffset(topOffset);
         identifier = itemIdentifier;
         return this;
     }
@@ -31,6 +36,23 @@ var Layer = function (parentElement) {
         return identifier;
     }
 
+    function getItemOffset(){
+        return currentOffset;
+    }
+
+    function setItemOffset(offset){
+        StyleHelpers.applyTransformStyle(listItemElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + offset + ', 0, 1)');
+        currentOffset = offset;
+    }
+
+    function getItemHeight() {
+        return itemHeight || (itemHeight = getDomElement().clientHeight);
+    }
+
+    function setItemHeight(newHeight) {
+        itemHeight = newHeight;
+    }
+
     function createListItemWrapperElement() {
         var el = document.createElement('div');
         StyleHelpers.applyElementStyle(el, {
@@ -45,6 +67,10 @@ var Layer = function (parentElement) {
         attach: attach,
         getItemIndex: getItemIndex,
         getDomElement: getDomElement,
+        getItemOffset: getItemOffset,
+        setItemOffset: setItemOffset,
+        getItemHeight: getItemHeight,
+        setItemHeight: setItemHeight,
         getIdentifier: getIdentifier
     }
 };

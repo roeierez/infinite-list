@@ -11,12 +11,10 @@ for (var i=0; i<ITEMS_COUNT; ++i){
     });
 }
 
+var pageNum = 0,
+    heights = {};
 
 var list = new InfiniteList({
-
-    itemHeightGetter: function(){
-        return 320;
-    },
 
     itemRenderer: function(index, domElement){
         React.render(React.createElement(template, listData[index]), domElement);
@@ -29,14 +27,15 @@ var list = new InfiniteList({
         }
 
         setTimeout(function(){
-            callback(100, true);
+            callback(10, true);
         }, 2000);
     },
 
     initialPage: {
         hasMore: true,
-        itemsCount: 100
+        itemsCount: 10
     }
 
-}).attach(document.getElementById('main'));
+});
+list.attach(document.getElementById('main'));
 

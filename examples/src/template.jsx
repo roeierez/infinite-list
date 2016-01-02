@@ -3,7 +3,7 @@ var template = React.createClass({
         return <article>
                 <div className="title">
                     <div className="title-image">
-                        <img src="../resources/bird.jpg" className="img"/>
+                        <img src="../resources/bird.jpg" style={{width: '30px', height: '30px'}} className="img"/>
                     </div>
                     <div className="titleAndTime">
                         <a href="" className="title-text">

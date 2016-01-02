@@ -1,10 +1,10 @@
-var Scroller = require('../vendor/zynga-scroller/Scroller.js'),
-    Layer = require('./Layer'),
-    LayersPool = require('./layerPool'),
-    TouchScroller = require('./TouchScroller'),
+var TouchScroller = require('./TouchScroller'),
+    VerticalScroller = require('./VerticalScroller'),
+    ScrollbarRenderer = require('./ScrollbarRenderer'),
+    AnimationFrameHelper = require('./AnimationFrameHelper'),
+    ListItemsRenderer = require('./ListItemsRenderer'),
     StyleHelpers = require('./StyleHelpers');
-    DEFAULT_ITEM_HEIGHT = 40,
-    MIN_FPS = 30;
+    DEFAULT_ITEM_HEIGHT = 2;
 
 var InfiniteList = function (listConfig) {
 
@@ -14,31 +14,30 @@ var InfiniteList = function (listConfig) {
             itemTypeGetter: null,
             pageFetcher: null,
             loadMoreRenderer: function(index, domElement){
-                domElement.innerHTML = 'Loading...';
+                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
             },
             hasMore: false,
             itemsCount: 0
         },
         parentElement = null,
+        parentElementHeight,
         rootElement = null,
         scrollElement = null,
-        scrollbar = null,
+        scrollbarRenderer = null,
+        itemsRenderer = null,
         scroller = null,
-        visibleHeight = 0,
-        renderedListItems = [],
-        accumulatedRowHeights = [],
-        layersPool = new LayersPool(),
-        touchConnector = null,
+        listItemsHeights = [],
         topOffset = 0,
-        runAnimation = false,
-        needsRender = true,
-        measuredFPS = 60;
+        scrollToIndex = 0,
+        topItemOffset = 0,
+        needsRender = true;
 
     for (key in listConfig){
         if (listConfig.hasOwnProperty(key)){
             config[key] = listConfig[key];
         }
     }
+
     var initialPageConfig = listConfig.initialPage;
     if (initialPageConfig){
         config.itemsCount = initialPageConfig.itemsCount || 0;
@@ -47,9 +46,23 @@ var InfiniteList = function (listConfig) {
 
     function attach(domElement, touchProvider){
         parentElement = domElement;
-        visibleHeight = parentElement.clientHeight;
         initializeRootElement(domElement);
-        initializeScroller(domElement, touchProvider);
+        scrollbarRenderer = new ScrollbarRenderer(rootElement);
+        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
+        scroller = new VerticalScroller(
+            parentElement,
+            function (top) {
+                topOffset = (top || 0);
+                needsRender = true;
+            },
+            touchProvider
+        );
+
+        scroller.setDimensions(
+            Number.MIN_SAFE_INTEGER,
+            Number.MAX_SAFE_INTEGER
+        );
+
         window.addEventListener('resize', refresh.bind(this));
         runAnimationLoop();
         refresh();
@@ -57,52 +70,27 @@ var InfiniteList = function (listConfig) {
     }
 
     function detach() {
-        runAnimation = false;
-        if (touchConnector){
-            touchConnector.disconnect();
-        }
+        AnimationFrameHelper.stopAnimationLoop();
         parentElement.removeChild(rootElement);
         window.removeEventListener('resize', refresh.bind(this));
     }
 
     function runAnimationLoop(){
-        var lastStepTime = new Date().getTime(),
-            frames = 0;
-        runAnimation = true;
-        var animationStep = function(){
-            var currentTime = new Date().getTime();
-            frames++;
-            if (currentTime - lastStepTime > 200) {
-                measuredFPS = Math.min(60, 1000 * frames / (currentTime - lastStepTime));
-                lastStepTime = currentTime;
-                frames = 0;
-            }
+        AnimationFrameHelper.startAnimationLoop(function(){
             if (needsRender) {
                 render();
             }
-            if (runAnimation) {
-                requestAnimationFrame(animationStep);
+        });
+    }
+
+    function calculateHeights(fromIndex) {
+        if (config.itemHeightGetter) {
+            for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
+                listItemsHeights[i] = config.itemHeightGetter(i);
             }
         }
-        requestAnimationFrame(animationStep);
     }
 
-    function calculateHeights() {
-        accumulatedRowHeights = [0];
-        for (var i = 1; i <= config.itemsCount || 0; ++i) {
-            var currentRowHeight = config.itemHeightGetter ? config.itemHeightGetter(i - 1) : DEFAULT_ITEM_HEIGHT;
-            accumulatedRowHeights[i] = accumulatedRowHeights[i - 1] + currentRowHeight;
-        }
-    }
-
-    /*
-     This method creates the list various elements:
-     1. rootElement - the root element of the list which is the only one that has a relative position.
-     all other elements are child of the root and has absolute position so the layout cycle will be minimal
-     2. scrollElement - this one is the parent of all list items and is translated according to the top position given
-     by the scroller
-     3. scrollbar - the vertical scrollbar. The scrollbar is rendered because I don't use the native scroller here.
-     */
     function initializeRootElement(parentElement) {
         scrollElement = document.createElement('div');
         StyleHelpers.applyElementStyle(scrollElement, {
@@ -119,210 +107,138 @@ var InfiniteList = function (listConfig) {
             overflow: 'hidden'
         });
         rootElement.appendChild(scrollElement);
-
-        scrollbar = document.createElement('div');
-        StyleHelpers.applyElementStyle(scrollbar, {
-            position: 'absolute',
-            top: '0px',
-            right: '0px',
-            marginRight: '3px',
-            opacity: 0.3,
-            width: '5px',
-            backgroundColor: "#333"
-        });
-        rootElement.appendChild(scrollbar);
         parentElement.appendChild(
             rootElement);
     };
 
-    /*
-     Initialize the scroller
-     The scroller is fed with touch input and is responsible for caculating momentum and eventually invoke a
-     callback with the scrolling position when changed.
-     I have used ZyngaScroller for that: https://github.com/zynga/scroller
-     */
-    function initializeScroller(parentElement, touchProvider) {
-
-        scroller = new TouchScroller(
-            parentElement,
-
-            function (left, top) {
-                topOffset = top || 0;
-                needsRender = true;
-            },
-
-            touchProvider
-        );
-    }
-
-    function updateScrollerDimentions(parentElement){
-
-        scroller.setDimensions(
-            parentElement.clientWidth,
-            parentElement.clientHeight,
-            parentElement.clientWidth,
-            getListHeight()
-        );
-    }
-
     function refresh(){
+        var topListItem = itemsRenderer.getRenderedItems()[0],
+            topListItemIndex = topListItem && topListItem.getItemIndex() || 0,
+            topItemStartsAt = topListItem && topListItem.getItemOffset() || 0,
+            differenceFromTop = topOffset - topItemStartsAt;
+
+        parentElementHeight = parentElement.clientHeight;
         StyleHelpers.applyElementStyle(rootElement, {
             height: parentElement.clientHeight + 'px',
             width: parentElement.clientWidth + 'px'
         });
-
-        renderedListItems.forEach(function(layer){
-            layersPool.addLayer(layer, true)
-        });
-        renderedListItems = [];
+        itemsRenderer.refresh();
         calculateHeights();
-        updateScrollerDimentions(parentElement);
-        needsRender = true;
+        scrollbarRenderer.refresh();
+        scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
-    function isBusy(){
-        return measuredFPS < MIN_FPS;
+    function updateScroller() {
+        var maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
+            renderedItems = itemsRenderer.getRenderedItems(),
+            lastRenderedItem = renderedItems[renderedItems.length - 1],
+            minScrollerOffset =  Number.MIN_SAFE_INTEGER,
+            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
+
+        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
+                minScrollerOffset = renderedItems[0].getItemOffset();
+        }
+
+        if (lastRenderedItem && lastRenderedItem.getItemIndex() == maxIndexToRender) {
+                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
+        }
+
+        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
     }
 
-    var itemsNeedRerender = {};
-
-    /*
-     This method fix the list according to the top positoin:
-     1. render the list items, recycle from the pool if needed and bring not needed items back to the pool.
-     2. update the scrollbar
-     3. translate the view according to the scrolling position
-     */
     function render() {
+        var renderedItems;
 
-        var topVisibleIndex = getFirstVisibleItemAtHeight(topOffset),
-            bottomVisibleIndex = getFirstVisibleItemAtHeight(topOffset + visibleHeight);
+        updateScroller();
+        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
+        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+        renderedItems = itemsRenderer.getRenderedItems();
 
-        if (!config.hasMore){
-            bottomVisibleIndex = Math.min(bottomVisibleIndex, config.itemsCount - 1);
+        scrollToIndex = null;
+        topItemOffset = null;
+
+
+        renderedItems.forEach(function(item){
+            listItemsHeights[item.getItemIndex()] = item.getItemHeight();
+        });
+
+        var avarageItemHeight = 0,
+            itemsCount = 0;
+        for (var i=0; i<listItemsHeights.length; ++i) {
+            if (typeof listItemsHeights[i] == 'number') {
+
+                avarageItemHeight += listItemsHeights[i];
+                itemsCount++;
+            }
         }
-        //remove non-visible layers from top and push them to layerPool
-        while (renderedListItems.length > 0 && renderedListItems[0].getItemIndex() < topVisibleIndex) {
-            layersPool.addLayer(renderedListItems.shift());
+        avarageItemHeight = avarageItemHeight / itemsCount;
+        scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+    }
+
+    function loadMoreCallback(){
+        config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
+            config.hasMore = hasMore;
+            config.itemsCount += pageItemsCount;
+            calculateHeights(config.itemsCount - pageItemsCount);
+            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
+        });
+    }
+
+    function scrollToItem(index, animate, relativeOffset) {
+        var targetPosition = 0;
+        if (config.itemHeightGetter) {
+            for (var i=0; i<index; ++i){
+                targetPosition += config.itemHeightGetter(i);
+            }
+        } else {
+            scrollToIndex = index;
         }
+        topItemOffset = relativeOffset || 0;
+        scroller.scrollTo( targetPosition, config.itemHeightGetter && animate);
+    }
 
-        //remove non-visible layers from bottom and push them to layerPool
-        while (renderedListItems.length > 0 && renderedListItems[renderedListItems.length - 1].getItemIndex() > bottomVisibleIndex) {
-            layersPool.addLayer(renderedListItems.pop());
-        }
+    function refreshItemHeight(index){
 
-        var renderedStart = renderedListItems.length > 0 ? renderedListItems[0].getItemIndex() : (bottomVisibleIndex + 1),
-            topItems = [];
+        var renderedItems = itemsRenderer.getRenderedItems();
+        var renderedListItem = renderedItems.filter(function(rItem){
+            return rItem.getItemIndex() == index;
+        })[0];
 
-        var systemBusyRenderer = function(index, domElement){
-                domElement.innerHTML = "Loading...";
-            },
-            itemRendered = false,
-            renderListItem = function(listItem){
-                var renderBusy =  isBusy();
-                var renderer = !renderBusy ? config.itemRenderer : systemBusyRenderer;
-                renderer(listItem.getItemIndex(), listItem.getDomElement());
-                if (renderBusy){
-                    itemsNeedRerender[listItem.getItemIndex()] = listItem;
+        //we only need to do something if the index points to a rendered item.
+        if (renderedListItem) {
+            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
+                startOffset = renderedListItem.getItemOffset();
+
+            if (!newHeight) {
+                newHeight = renderedListItem.getDomElement().clientHeight
+            }
+
+            renderedListItem.setItemHeight(newHeight);
+
+            var itemRenderIndex = renderedListItem.getItemIndex() - renderedItems[0].getItemIndex();
+            var nextItem = renderedItems[itemRenderIndex + 1];
+            if (renderedListItem.getItemOffset() < topOffset) {
+                while (nextItem && renderedListItem){
+                    renderedListItem.setItemOffset(nextItem.getItemOffset() - renderedListItem.getItemHeight());
+                    nextItem = renderedListItem;
+                    renderedListItem = renderedItems[--itemRenderIndex];
+                }
+            } else {
+                while (nextItem && renderedListItem){
+                    nextItem.setItemOffset(renderedListItem.getItemOffset() + renderedListItem.getItemHeight());
+                    renderedListItem = nextItem;
+                    nextItem = renderedItems[++itemRenderIndex + 1];
                 }
             }
-
-        //fill the gaps on top
-        for (var i = topVisibleIndex; i < renderedStart; ++i) {
-            renderListItem(pushLayerAtIndex(i, topItems));
-            itemRendered = true;
         }
-        renderedListItems = topItems.concat(renderedListItems);
-
-        //fill the gaps on bottom
-        for (var i = renderedListItems[renderedListItems.length - 1].getItemIndex() + 1; i <= Math.min(config.itemsCount - 1, bottomVisibleIndex); ++i) {
-            renderListItem(pushLayerAtIndex(i, renderedListItems));
-            itemRendered = true;
-        }
-
-        var indicesForRerender = Object.keys(itemsNeedRerender);
-        if (!itemRendered && !isBusy()){
-            if (indicesForRerender.length > 0){
-                var indexToRender = indicesForRerender.shift();
-                config.itemRenderer(itemsNeedRerender[indexToRender].getItemIndex(), itemsNeedRerender[indexToRender].getDomElement());
-                delete itemsNeedRerender[indexToRender];
-            }
-        }
-
-        if (bottomVisibleIndex > config.itemsCount - 1){
-            renderLoadMore();
-        }
-
-        updateScrollbar();
-        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
-        needsRender = (indicesForRerender.length > 0);
-    }
-
-    /*
-     Update the scrollbar size and position.
-     */
-    function updateScrollbar() {
-        var listHeight = getListHeight(),
-            attachedElement = rootElement.parentElement,
-            scrollbarHeight = Math.max(10, Math.floor(attachedElement.clientHeight / listHeight * attachedElement.clientHeight)),
-            scrollbarPos = Math.floor(topOffset / (listHeight - attachedElement.clientHeight) * (attachedElement.clientHeight - scrollbarHeight)),
-            heightInPx = scrollbarHeight + 'px';
-
-        StyleHelpers.applyElementStyle(scrollbar, {
-            height: heightInPx
-        });
-        StyleHelpers.applyTransformStyle(scrollbar, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + ( scrollbarPos) + ', 0, 1)');
-    }
-
-    function getListHeight(){
-        return accumulatedRowHeights[accumulatedRowHeights.length - 1] + (!config.hasMore ? 0 : DEFAULT_ITEM_HEIGHT);
-    }
-
-    /*
-     Borrow a layer from the LayersPool and attach it to a certain item at index.
-     */
-    function pushLayerAtIndex(index, listItems, identifier, height) {
-        var layerIdentifier = identifier || (config.itemTypeGetter ? config.itemTypeGetter(index) : '');
-        var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
-        if (layer == null) {
-            layer = new Layer(scrollElement);
-        }
-        //index, topOffset, renderer, width, height, itemIdentifier
-        var itemHeight = height || config.itemHeightGetter && config.itemHeightGetter(index);
-        layer.attach(index, accumulatedRowHeights[index], rootElement.clientWidth - 9, itemHeight, layerIdentifier);
-        listItems.push(layer);
-        return layer;
-    }
-
-    function renderLoadMore(){
-        if (renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
-            var loadMoreLayer = pushLayerAtIndex(config.itemsCount, renderedListItems, '$LoadMore', -1);
-            config.loadMoreRenderer(config.itemsCount, loadMoreLayer.getDomElement());
-            config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
-                config.hasMore = hasMore;
-                config.itemsCount += pageItemsCount;
-                refresh();
-            });
-        }
-    }
-
-    function getFirstVisibleItemAtHeight(top) {
-        var i = 0;
-
-        while (i < config.itemsCount && accumulatedRowHeights[i + 1] < top) {
-            i++;
-        }
-        return i;
-    }
-
-    function scrollToItem(index, animate) {
-        scroller.scrollTo(0, accumulatedRowHeights[index], animate);
     }
 
     return {
         attach: attach,
         detach: detach,
         scrollToItem: scrollToItem,
-        refresh: refresh
+        refresh: refresh,
+        refreshItemHeight: refreshItemHeight
     }
 
 };

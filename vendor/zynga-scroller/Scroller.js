@@ -288,7 +288,7 @@ var core = require('./Animate');
 			self.__computeScrollMax();
 
 			// Refresh scroll position
-			self.scrollTo(self.__scrollLeft, self.__scrollTop, true);
+			//self.scrollTo(self.__scrollLeft, self.__scrollTop, true);
 			
 		},
 
