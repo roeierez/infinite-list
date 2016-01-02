@@ -26,13 +26,13 @@ var list = new InfiniteList({
         }
 
         setTimeout(function(){
-            callback(10, true);
+            callback(100, true);
         }, 2000);
     },
 
     initialPage: {
         hasMore: true,
-        itemsCount: 10
+        itemsCount: 100
     }
 
 });
