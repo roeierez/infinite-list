@@ -8,8 +8,7 @@ var VerticalScroller = function (parentElement, callback) {
         frame = 0,
         velocity = 0,
         amplitude = 0,
-        pressed = 0,
-        ticker = 0,
+        pressed = 0,        
         reference = 0,
         offset = 0,
         target = 0,
@@ -30,19 +29,6 @@ var VerticalScroller = function (parentElement, callback) {
 
         // mouse event
         return e.clientY;
-    }
-
-    function track () {
-        var now, elapsed, delta, v;
-
-        now = Date.now();
-        elapsed = now - timestamp;
-        timestamp = now;
-        delta = offset - frame;
-        frame = offset;
-
-        v = 1000 * delta / (1 + elapsed);
-        velocity = 0.8 * v + 0.2 * velocity;
     }
 
     function scroll (y) {
@@ -83,36 +69,35 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function bounce (top){
+
+        var finalDestination = top ? minOffset : maxOffset,
+            isBouncingBack = top && amplitude > 0 || !top && amplitude < 0;
+
         if (amplitude == 0){
             return;
         }
-        //console.error('amplitude = ' + amplitude + ' maxoffset = ' + maxOffset + ' target = ' + target + ' offset=' + offset);
+
         var elapsed = Date.now() - timestamp;
-        var delta = amplitude * Math.exp(-elapsed / SCROLLING_TIME_CONSTANT);
-        if ( (top && amplitude > 0 || !top && amplitude < 0) && Math.abs(delta) < 2) {
+        var delta = amplitude * Math.exp(-elapsed / (target == finalDestination ? 125 : SCROLLING_TIME_CONSTANT) );
+
+        if ( isBouncingBack && Math.abs(delta) < 2 ) {
             scroll(top ? minOffset : maxOffset);
             return;
         }
 
-        scroll(target - delta);
+        scroll(target - delta);        
 
-        if (amplitude > 0 && top) {
-            target = minOffset;
-            amplitude = (target - offset);
-
-        } else if (amplitude < 0 && !top) {
-            target = maxOffset;
-            amplitude = (target - offset);
-
-        }
-        else {
-            if (top) {
-                target = minOffset - (minOffset - target) * 0.9;
-            } else {
-                target = maxOffset - (maxOffset - target) * 0.9;
+        if (isBouncingBack) {
+            if (target != finalDestination) {
+                target = finalDestination;
+                amplitude = target - offset;    
+                timestamp = new Date();
             }
-            amplitude = target - offset;
-            timestamp = new Date();
+
+        } else {
+            target = finalDestination - (finalDestination - target) * 0.1;
+            amplitude = target - offset;            
+            
         }
 
         requestAnimationFrame(function(){
@@ -129,22 +114,20 @@ var VerticalScroller = function (parentElement, callback) {
         frame = offset;
         timestamp = Date.now();
         recordTouches(e);
-        // clearInterval(ticker);
-        // ticker = setInterval(track, 10);
 
         e.preventDefault();
         e.stopPropagation();
     }
 
     function drag (e) {
-        var y, delta;
+        var y, delta, scaleFactor = offset < minOffset || offset > maxOffset ? 0.5 : 1;
         if (pressed) {
             recordTouches(e);
             y = ypos(e);
             delta = reference - y;
             if (delta > 2 || delta < -2) {
-                reference = y;
-                scroll(offset + delta * 0.5);
+                reference = y;                
+                scroll(offset + delta * scaleFactor);
             }
         }
         e.preventDefault();
@@ -152,7 +135,7 @@ var VerticalScroller = function (parentElement, callback) {
     }
 
     function recordTouches(e) {
-        var touches = e.touches,
+        var touches = e.touches || [{pageX: e.pageX, pageY: e.pageY}],
             timestamp = e.timeStamp,
             currentTouchTop = touches[0].pageY;
 
@@ -181,11 +164,9 @@ var VerticalScroller = function (parentElement, callback) {
         var delta = touchPositions[endPos].offset - touchPositions[startPos].offset;
 
         var v = -1000 * delta / (1 + elapsed);
-        velocity = 0.8 * v + 0.2 * velocity;
+        velocity = 0.3 * v + 0.2 * velocity;
 
-        clearInterval(ticker);
-
-        amplitude = 0.8 * velocity;
+        amplitude = 1.0 * velocity;
         target = Math.round(offset + amplitude);
         timestamp = Date.now();
         requestAnimationFrame(autoScroll);
