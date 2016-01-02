@@ -164,7 +164,7 @@ var VerticalScroller = function (parentElement, callback) {
         var delta = touchPositions[endPos].offset - touchPositions[startPos].offset;
 
         var v = -1000 * delta / (1 + elapsed);
-        velocity = 0.8 * v + 0.2 * velocity;
+        velocity = 0.3 * v + 0.2 * velocity;
 
         amplitude = 1.0 * velocity;
         target = Math.round(offset + amplitude);
