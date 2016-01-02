@@ -26,6 +26,12 @@ var infiniteList = new InfiniteList(
     itemRenderer: function(index, domElement){
       domElement.innerHTML = "Item " + index;
     },
+    
+    /**
+      This methos is optional, if you know the height you should implement it, otherwise you can omit it and 
+      the list will query the DOM for the element height after it is rendered. This extra read height might have
+      a performance penalty but for most use cases it should not be noticeable.
+    **/
     itemHeightGetter: function(index){
       return 50;
     }
@@ -35,7 +41,7 @@ var infiniteList = new InfiniteList(
 
 The first argument to the itemRenderer is an index and the second is a domElement. The first time this element is rendered it is an empty DIV.
 Later on when this item becomes invisible because of scrolling action, for example, the DIV is not destroyed but cached and recycled for later use.
-The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.
+The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enables the user to update only the DOM elements that are changed instead of recreating the entire HTML content.
 
 ## Installation
 infinite-list uses a Universal Module Definition so you can use it with both CommonJS and RequireJS.
@@ -115,6 +121,9 @@ A function that receive the index of item and scroll the list to that item posit
 A function that tells the list to render again the items that are visible to the user.
 This is usually used when the user has changed the data of the list and wants to refresh the UI.
 
-## Roadmap
+### refreshItemHeight(index)
 
-* Support Auto-detect height of list items. This means that passing 'itemHeightGetter' will be optional and the list will detect the height after the item is rendered. It requires a bit refactoring and changing the scroller but I expect it to be in a couple of weeks from now.
+A function that tells the list to re-calculate the height of the item by its index.
+It is usefull when the list items are changing after they are first rendered, for example when images
+with unknown sizes are downloaded and rendered. In this use case you might want to call this function after the 
+image has loaded and the size is known.
