@@ -5,7 +5,7 @@
     <title>Infinite-list by roeierez</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
   </head>
@@ -22,40 +22,56 @@
       <h1>
 <a id="infinitelist" class="anchor" href="#infinitelist" aria-hidden="true"><span class="octicon octicon-link"></span></a>InfiniteList</h1>
 
-<p>See <a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Live demo</a> from your mobile device.</p>
+<p>Browse live demos from your mobile device:</p>
+
+<ol>
+<li>
+<a href="http://roeierez.github.io/infinite-list/examples/react/index.html" target="_blank">Simple list</a>.</li>
+<li>
+<a href="http://roeierez.github.io/infinite-list/examples/flickr/index.html" target="_blank">Variable image sizes from flickr</a>.</li>
+</ol>
 
 <p>A 60fps infinite scrollable list for mobile devices.
 There are some implementation of infinite scrolling out there.
 The best of them renders to the DOM only what the user sees on screen at a give time and use GPU acceleration for translating items.
 These techniques are used in this implementation too, but in order to achieve smooth scrolling in a list with complex items with complex DOM, or when the user scrolls fast even on old devices they are not enough.</p>
 
-<p>In addition this list implements the following:
-1. Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.
-2. Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling
-3. Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.</p>
+<p>In addition this list implements the following:</p>
+
+<ol>
+<li>Recycling of Dom elements in a similar way that iOS and Android does at UITableView and RecyclerView.</li>
+<li>Detect when the system is busy or the frame rate frequency is about to get lower and skip unnecessary work to enable smooth scrolling</li>
+<li>Enable the user to use whatever rendering technique he likes. This gives the ability to use React, for example, to render recycled items and benefit high performance rendering of list items.</li>
+</ol>
 
 <h2>
 <a id="quick-start" class="anchor" href="#quick-start" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Start</h2>
 
-<div class="highlight highlight-bash"><pre>var parentElement = ...
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> parentElement <span class="pl-k">=</span> ...
 
-var infiniteList = new InfiniteList(
+<span class="pl-k">var</span> infiniteList <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">InfiniteList</span>(
   {
-    initialPage: {
-      itemsCount: 100000
+    initialPage<span class="pl-k">:</span> {
+      itemsCount<span class="pl-k">:</span> <span class="pl-c1">100000</span>
     },
-    itemRenderer: function(index, domElement){
-      domElement.innerHTML = <span class="pl-s"><span class="pl-pds">"</span>Item <span class="pl-pds">"</span></span> + index<span class="pl-k">;</span>
+    <span class="pl-en">itemRenderer</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">index</span>, <span class="pl-smi">domElement</span>){
+      <span class="pl-smi">domElement</span>.<span class="pl-smi">innerHTML</span> <span class="pl-k">=</span> <span class="pl-s"><span class="pl-pds">"</span>Item <span class="pl-pds">"</span></span> <span class="pl-k">+</span> index;
     },
-    itemHeightGetter: function(index){
-      <span class="pl-k">return</span> 50<span class="pl-k">;</span>
+
+    <span class="pl-c">/**</span>
+<span class="pl-c">      This methos is optional, if you know the height you should implement it, otherwise you can omit it and </span>
+<span class="pl-c">      the list will query the DOM for the element height after it is rendered. This extra read height might have</span>
+<span class="pl-c">      a performance penalty but for most use cases it should not be noticeable.</span>
+<span class="pl-c">    **/</span>
+    <span class="pl-en">itemHeightGetter</span><span class="pl-k">:</span> <span class="pl-k">function</span>(<span class="pl-smi">index</span>){
+      <span class="pl-k">return</span> <span class="pl-c1">50</span>;
     }
   }
-).attach(parentElement)</pre></div>
+).<span class="pl-en">attach</span>(parentElement)</pre></div>
 
-<p>The first argument to the itemRenderer is a domElement. The first time this element is rendered it is an empty DIV.
+<p>The first argument to the itemRenderer is an index and the second is a domElement. The first time this element is rendered it is an empty DIV.
 Later on when this item becomes invisible because of scrolling action, for example, the DIV is not destroyed but cached and recycled for later use.
-The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enable the user to update only the DOM elements that are changed instead of recreating the entire HTML content.</p>
+The next time the item of this type is rendered the domElement might be a DIV with data of other item. This enables the user to update only the DOM elements that are changed instead of recreating the entire HTML content.</p>
 
 <h2>
 <a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
@@ -65,31 +81,31 @@ The next time the item of this type is rendered the domElement might be a DIV wi
 <h3>
 <a id="commonjs" class="anchor" href="#commonjs" aria-hidden="true"><span class="octicon octicon-link"></span></a>CommonJS</h3>
 
-<pre><code>require('infinite-list')
-</code></pre>
+<div class="highlight highlight-source-js"><pre><span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>infinite-list<span class="pl-pds">'</span></span>)</pre></div>
 
 <h3>
 <a id="requirejs" class="anchor" href="#requirejs" aria-hidden="true"><span class="octicon octicon-link"></span></a>RequireJS</h3>
 
-<pre><code>define(['[path to list project]/dist/InfiniteList.js'], function(list){
-  //your code goes here
-});
-</code></pre>
+<div class="highlight highlight-source-js"><pre><span class="pl-en">define</span>([<span class="pl-s"><span class="pl-pds">'</span>[path to list project]/dist/InfiniteList.js<span class="pl-pds">'</span></span>], <span class="pl-k">function</span>(<span class="pl-smi">list</span>){
+  <span class="pl-c">//your code goes here</span>
+});</pre></div>
 
 <h3>
 <a id="in-the-browser" class="anchor" href="#in-the-browser" aria-hidden="true"><span class="octicon octicon-link"></span></a>In the Browser</h3>
 
-<p>If you need it as a standalone script that is referenced from your html file then just include dist/InfiniteList.js and you have it on the global scope. </p>
+<p>If you need it as a standalone script that is referenced from your html file then just include <code>dist/InfiniteList.js</code> and you have it on the global scope. </p>
 
 <h3>
 <a id="in-npm" class="anchor" href="#in-npm" aria-hidden="true"><span class="octicon octicon-link"></span></a>In NPM</h3>
 
-<p>npm install infinite-list</p>
+<pre><code>npm install infinite-list
+</code></pre>
 
 <h3>
 <a id="bower" class="anchor" href="#bower" aria-hidden="true"><span class="octicon octicon-link"></span></a>bower</h3>
 
-<p>bower install infinite-list</p>
+<pre><code>bower install infinite-list
+</code></pre>
 
 <h2>
 <a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h2>
@@ -164,12 +180,14 @@ The user should feed the callback with two parameters:</p>
 <p>A function that tells the list to render again the items that are visible to the user.
 This is usually used when the user has changed the data of the list and wants to refresh the UI.</p>
 
-<h2>
-<a id="roadmap" class="anchor" href="#roadmap" aria-hidden="true"><span class="octicon octicon-link"></span></a>Roadmap</h2>
+<h3>
+<a id="refreshitemheightindex" class="anchor" href="#refreshitemheightindex" aria-hidden="true"><span class="octicon octicon-link"></span></a>refreshItemHeight(index)</h3>
 
-<ul>
-<li>Support Auto-detect height of list items. This means that passing 'itemHeightGetter' will be optional and the list will detect the height after the items is rendered. It requires a bit refactoring and changing the scroller but I expect it to be in a couple of weeks from now.</li>
-</ul>
+<p>A function that tells the list to re-calculate the height of the item by its index.
+It is usefull when the list items are changing after they are first rendered, for example when images
+with unknown sizes are downloaded and rendered. In this use case you might want to call this function after the 
+image has loaded and the size is known.
+For an example of how to use this method you can browser for the 'flickr' example in the examples directory.</p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/roeierez/infinite-list">Infinite-list</a> is maintained by <a href="https://github.com/roeierez">roeierez</a>.</span>
@@ -182,4 +200,3 @@ This is usually used when the user has changed the data of the list and wants to
   
   </body>
 </html>
-
