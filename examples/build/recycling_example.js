@@ -312,7 +312,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 3 */
 /***/ function(module, exports) {
 
-	var SCROLLING_TIME_CONSTANT = 325;
+	var SCROLLING_TIME_CONSTANT = 525;
 
 	var VerticalScroller = function (parentElement, callback) {
 
@@ -478,7 +478,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var delta = touchPositions[endPos].offset - touchPositions[startPos].offset;
 
 	        var v = -1000 * delta / (1 + elapsed);
-	        velocity = 0.3 * v + 0.2 * velocity;
+	        velocity = 0.8 * v + 0.2 * velocity;
 
 	        amplitude = 1.0 * velocity;
 	        target = Math.round(offset + amplitude);

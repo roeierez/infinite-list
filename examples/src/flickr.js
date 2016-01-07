@@ -35,7 +35,7 @@ var list = new InfiniteList({
         aggregatedResults[index].onImageLoaded = function(){
             list.refreshItemHeight(index);
         };
-        React.render(React.createElement(template, aggregatedResults[index]), domElement);
+        ReactDOM.render(React.createElement(template, aggregatedResults[index]), domElement);
     },
 
     loadMoreRenderer: function(index, domElement){

@@ -16,7 +16,7 @@ var pageNum = 0;
 var list = new InfiniteList({
 
     itemRenderer: function(index, domElement){
-        React.render(React.createElement(template, listData[index]), domElement);
+        ReactDOM.render(React.createElement(template, listData[index]), domElement);
     },
 
     pageFetcher: function(fromIndex, callback){
