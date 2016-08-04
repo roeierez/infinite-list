@@ -242,7 +242,6 @@ var InfiniteList = function (listConfig) {
 
             if (!newHeight) {
                 newHeight = renderedListItem.getDomElement().clientHeight;
-                console.error('updating height index ' + index + ' height=' + newHeight);
                 listItemsHeights[index] = newHeight;
             }
 

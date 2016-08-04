@@ -73,7 +73,6 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
 
         var lastItemToRenderIndex = Math.min(bottomRenderedItem.getItemIndex(), bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead);
-        console.error('lastItemToRenderIndex ' + lastItemToRenderIndex);
 
         while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
             layersPool.addLayer(renderedListItems.shift());
