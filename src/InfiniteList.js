@@ -1,4 +1,5 @@
 var VerticalScroller = require('./VerticalScroller'),
+    NativeScroller = require('./NativeScroller')
     ScrollbarRenderer = require('./ScrollbarRenderer'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     ListItemsRenderer = require('./ListItemsRenderer'),
@@ -16,6 +17,7 @@ var InfiniteList = function (listConfig) {
                 domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
             },
             hasMore: false,
+            useNativeScroller: true,
             itemsCount: 0
         },
         parentElement = null,
@@ -46,21 +48,31 @@ var InfiniteList = function (listConfig) {
     function attach(domElement, touchProvider){
         parentElement = domElement;
         initializeRootElement(domElement);
-        scrollbarRenderer = new ScrollbarRenderer(rootElement);
         itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
-        scroller = new VerticalScroller(
-            parentElement,
-            function (top) {
-                topOffset = (top || 0);
-                needsRender = true;
-            },
-            touchProvider
-        );
+        if (config.useNativeScroller) {
+            scroller = new NativeScroller(
+                rootElement,
+                function (top) {
+                    topOffset = (top || 0);
+                    needsRender = true;
+                }
+            );
+        } else {
+            scrollbarRenderer = new ScrollbarRenderer(rootElement);
+            scroller = new VerticalScroller(
+                parentElement,
+                function (top) {
+                    topOffset = (top || 0);
+                    needsRender = true;
+                },
+                touchProvider
+            );
 
-        scroller.setDimensions(
-            Number.MIN_SAFE_INTEGER,
-            Number.MAX_SAFE_INTEGER
-        );
+            scroller.setDimensions(
+                Number.MIN_SAFE_INTEGER,
+                Number.MAX_SAFE_INTEGER
+            );
+        }
 
         window.addEventListener('resize', refresh.bind(this));
         runAnimationLoop();
@@ -83,19 +95,15 @@ var InfiniteList = function (listConfig) {
     }
 
     function calculateHeights(fromIndex) {
-        if (config.itemHeightGetter) {
-            for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
-                listItemsHeights[i] = config.itemHeightGetter(i);
-            }
+        for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
+            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i) || 200;
         }
     }
 
     function initializeRootElement(parentElement) {
         scrollElement = document.createElement('div');
         StyleHelpers.applyElementStyle(scrollElement, {
-            position: 'absolute',
-            top: 0,
-            bottom: 0
+            position: config.useNativeScroller ? 'relative' : 'absolute'
         });
 
         rootElement = document.createElement('div');
@@ -103,7 +111,7 @@ var InfiniteList = function (listConfig) {
             position: 'relative',
             height: parentElement.clientHeight + 'px',
             width: parentElement.clientWidth + 'px',
-            overflow: 'hidden'
+            overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
         });
         rootElement.appendChild(scrollElement);
         parentElement.appendChild(
@@ -123,7 +131,9 @@ var InfiniteList = function (listConfig) {
         });
         itemsRenderer.refresh();
         calculateHeights();
-        scrollbarRenderer.refresh();
+        if (scrollbarRenderer) {
+            scrollbarRenderer.refresh();
+        }
         scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
@@ -142,14 +152,26 @@ var InfiniteList = function (listConfig) {
                 maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
         }
 
-        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+        if (config.useNativeScroller) {
+            var totalHeight = 0;
+            listItemsHeights.forEach(function(h){
+                totalHeight += h;
+            });
+            StyleHelpers.applyElementStyle(scrollElement, {
+                height: totalHeight + 'px'
+            });
+        } else {
+            scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+        }
     }
 
     function render() {
         var renderedItems;
 
         updateScroller();
-        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
+        if (!config.useNativeScroller) {
+            StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
+        }
         needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
         renderedItems = itemsRenderer.getRenderedItems();
 
@@ -171,7 +193,9 @@ var InfiniteList = function (listConfig) {
             }
         }
         avarageItemHeight = avarageItemHeight / itemsCount;
-        scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+        if (scrollbarRenderer) {
+            scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+        }
     }
 
     function loadMoreCallback(){
@@ -209,7 +233,9 @@ var InfiniteList = function (listConfig) {
                 startOffset = renderedListItem.getItemOffset();
 
             if (!newHeight) {
-                newHeight = renderedListItem.getDomElement().clientHeight
+                newHeight = renderedListItem.getDomElement().clientHeight;
+                console.error('updating height index ' + index + ' height=' + newHeight);
+                listItemsHeights[index] = newHeight;
             }
 
             renderedListItem.setItemHeight(newHeight);

@@ -54,7 +54,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(12);
+	module.exports = __webpack_require__(13);
 
 
 /***/ },
@@ -63,9 +63,10 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var VerticalScroller = __webpack_require__(3),
-	    ScrollbarRenderer = __webpack_require__(4),
-	    AnimationFrameHelper = __webpack_require__(6),
-	    ListItemsRenderer = __webpack_require__(7),
+	    NativeScroller = __webpack_require__(4)
+	    ScrollbarRenderer = __webpack_require__(6),
+	    AnimationFrameHelper = __webpack_require__(7),
+	    ListItemsRenderer = __webpack_require__(8),
 	    StyleHelpers = __webpack_require__(5);
 	    DEFAULT_ITEM_HEIGHT = 2;
 
@@ -80,6 +81,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
 	            },
 	            hasMore: false,
+	            useNativeScroller: true,
 	            itemsCount: 0
 	        },
 	        parentElement = null,
@@ -110,21 +112,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function attach(domElement, touchProvider){
 	        parentElement = domElement;
 	        initializeRootElement(domElement);
-	        scrollbarRenderer = new ScrollbarRenderer(rootElement);
 	        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
-	        scroller = new VerticalScroller(
-	            parentElement,
-	            function (top) {
-	                topOffset = (top || 0);
-	                needsRender = true;
-	            },
-	            touchProvider
-	        );
+	        if (config.useNativeScroller) {
+	            scroller = new NativeScroller(
+	                rootElement,
+	                function (top) {
+	                    topOffset = (top || 0);
+	                    needsRender = true;
+	                }
+	            );
+	        } else {
+	            scrollbarRenderer = new ScrollbarRenderer(rootElement);
+	            scroller = new VerticalScroller(
+	                parentElement,
+	                function (top) {
+	                    topOffset = (top || 0);
+	                    needsRender = true;
+	                },
+	                touchProvider
+	            );
 
-	        scroller.setDimensions(
-	            Number.MIN_SAFE_INTEGER,
-	            Number.MAX_SAFE_INTEGER
-	        );
+	            scroller.setDimensions(
+	                Number.MIN_SAFE_INTEGER,
+	                Number.MAX_SAFE_INTEGER
+	            );
+	        }
 
 	        window.addEventListener('resize', refresh.bind(this));
 	        runAnimationLoop();
@@ -147,19 +159,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function calculateHeights(fromIndex) {
-	        if (config.itemHeightGetter) {
-	            for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
-	                listItemsHeights[i] = config.itemHeightGetter(i);
-	            }
+	        for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
+	            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i) || 200;
 	        }
 	    }
 
 	    function initializeRootElement(parentElement) {
 	        scrollElement = document.createElement('div');
 	        StyleHelpers.applyElementStyle(scrollElement, {
-	            position: 'absolute',
-	            top: 0,
-	            bottom: 0
+	            position: config.useNativeScroller ? 'relative' : 'absolute'
 	        });
 
 	        rootElement = document.createElement('div');
@@ -167,7 +175,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            position: 'relative',
 	            height: parentElement.clientHeight + 'px',
 	            width: parentElement.clientWidth + 'px',
-	            overflow: 'hidden'
+	            overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
 	        });
 	        rootElement.appendChild(scrollElement);
 	        parentElement.appendChild(
@@ -187,7 +195,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        itemsRenderer.refresh();
 	        calculateHeights();
-	        scrollbarRenderer.refresh();
+	        if (scrollbarRenderer) {
+	            scrollbarRenderer.refresh();
+	        }
 	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
@@ -206,14 +216,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
 	        }
 
-	        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	        if (config.useNativeScroller) {
+	            var totalHeight = 0;
+	            listItemsHeights.forEach(function(h){
+	                totalHeight += h;
+	            });
+	            StyleHelpers.applyElementStyle(scrollElement, {
+	                height: totalHeight + 'px'
+	            });
+	        } else {
+	            scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	        }
 	    }
 
 	    function render() {
 	        var renderedItems;
 
 	        updateScroller();
-	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
+	        if (!config.useNativeScroller) {
+	            StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
+	        }
 	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
 	        renderedItems = itemsRenderer.getRenderedItems();
 
@@ -235,7 +257,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 	        avarageItemHeight = avarageItemHeight / itemsCount;
-	        scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+	        if (scrollbarRenderer) {
+	            scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+	        }
 	    }
 
 	    function loadMoreCallback(){
@@ -273,7 +297,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	                startOffset = renderedListItem.getItemOffset();
 
 	            if (!newHeight) {
-	                newHeight = renderedListItem.getDomElement().clientHeight
+	                newHeight = renderedListItem.getDomElement().clientHeight;
+	                console.error('updating height index ' + index + ' height=' + newHeight);
+	                listItemsHeights[index] = newHeight;
 	            }
 
 	            renderedListItem.setItemHeight(newHeight);
@@ -532,6 +558,61 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var StyleHelpers = __webpack_require__(5);
 
+	var NativeScroller = function (scrollElement, callback) {
+
+	    scrollElement.addEventListener('scroll', function(){
+	        callback(scrollElement.scrollTop);
+	    });
+
+	    return {
+	        setDimensions: function(min, max){
+	            StyleHelpers.applyElementStyle(scrollElement, {
+	                height: (max - min) + 'px'
+	            });
+	        },
+	        scrollTo: function(){
+	            callback(scrollElement.scrollTop);
+	        }
+	    }
+	}
+
+	module.exports = NativeScroller;
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	
+	var applyElementStyle = function (element, styleObj) {
+	        Object.keys(styleObj).forEach(function (key) {
+	            if (element.style[key] != styleObj[key]) {
+	                element.style[key] = styleObj[key];
+	            }
+	        })
+	    },
+
+	    applyTransformStyle = function(element, transformValue){
+	        var styleObject = {};
+	        ['webkit', 'Moz', 'O', 'ms'].forEach(function(prefix){
+	                styleObject[prefix + 'Transform'] = transformValue;
+	            }
+	        );
+	        applyElementStyle(element, styleObject);
+	};
+
+	module.exports = {
+	    applyElementStyle: applyElementStyle,
+	    applyTransformStyle: applyTransformStyle
+	};
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var StyleHelpers = __webpack_require__(5);
+
 	var ScrollbarRenderer = function(rootElement){
 	    var scrollbar = document.createElement('div'),
 	        clientHeight = rootElement.parentElement.clientHeight;
@@ -574,35 +655,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	
-	var applyElementStyle = function (element, styleObj) {
-	        Object.keys(styleObj).forEach(function (key) {
-	            if (element.style[key] != styleObj[key]) {
-	                element.style[key] = styleObj[key];
-	            }
-	        })
-	    },
-
-	    applyTransformStyle = function(element, transformValue){
-	        var styleObject = {};
-	        ['webkit', 'Moz', 'O', 'ms'].forEach(function(prefix){
-	                styleObject[prefix + 'Transform'] = transformValue;
-	            }
-	        );
-	        applyElementStyle(element, styleObject);
-	};
-
-	module.exports = {
-	    applyElementStyle: applyElementStyle,
-	    applyTransformStyle: applyTransformStyle
-	};
-
-
-/***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports) {
 
 	
@@ -645,12 +698,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Layer = __webpack_require__(8),
-	    LayersPool = __webpack_require__(9),
-	    AnimationFrameHelper = __webpack_require__(6),
+	var Layer = __webpack_require__(9),
+	    LayersPool = __webpack_require__(10),
+	    AnimationFrameHelper = __webpack_require__(7),
 	    MIN_FPS = 30,
 	    MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
 
@@ -798,7 +851,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var StyleHelpers = __webpack_require__(5);
@@ -882,7 +935,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var StyleHelpers = __webpack_require__(5),
@@ -923,13 +976,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 10 */,
 /* 11 */,
-/* 12 */
+/* 12 */,
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var InfiniteList = __webpack_require__(2),
-	    template = __webpack_require__(13),
+	    template = __webpack_require__(14),
 	    listData = [],
 	    ITEMS_COUNT = 10000;
 
@@ -971,7 +1024,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports) {
 
 	var template = React.createClass({displayName: "template",
