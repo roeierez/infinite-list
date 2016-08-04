@@ -11,7 +11,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         renderedListItems = [],
         layersPool = new LayersPool();
 
-    function render(topOffset, atIndex, offsetFromTop){
+    function render(topOffset, atIndex, offsetFromTop, minNumberOfItemsAhead){
         var startRenderTime = new Date().getTime();
 
         if ( typeof atIndex == 'number' &&  atIndex >= 0){
@@ -28,6 +28,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         var topRenderedItem = renderedListItems[0],
             bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 
+        //render top items;
         while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
             topRenderedItem = renderBefore(topRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
@@ -35,15 +36,18 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
             }
         }
 
+        //rener load more
         if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
             var bottomIndex = bottomRenderedItem.getItemIndex();
             layersPool.addLayer(renderedListItems.pop());
             if (renderedListItems.length > 0) {
                 bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
             } else {
-                return render(topOffset, bottomIndex);
+                return render(topOffset, bottomIndex, undefined, minNumberOfItemsAhead);
             }
         }
+
+        //render bottom items;
         while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
             bottomRenderedItem = renderAfter(bottomRenderedItem);
             if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
@@ -51,12 +55,32 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
             }
         }
 
+        var bottomVisibleItem = renderedListItems[renderedListItems.length - 1];
+        for (var i=0; i < renderedListItems.length; ++i) {
+            if (renderedListItems[i].getItemOffset() + renderedListItems[i].getItemHeight() >= topOffset + visibleHeight) {
+                bottomVisibleItem = renderedListItems[i];
+                break;
+            }
+        }
+
+        if (bottomVisibleItem) {
+            while (bottomRenderedItem && (bottomRenderedItem.getItemIndex() < bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead)  && bottomRenderedItem.getItemIndex() < listConfig.itemsCount-1) {
+                bottomRenderedItem = renderAfter(bottomRenderedItem);
+                if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+                    return true;
+                }
+            }
+        }
+
+        var lastItemToRenderIndex = Math.min(bottomRenderedItem.getItemIndex(), bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead);
+        console.error('lastItemToRenderIndex ' + lastItemToRenderIndex);
+
         while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
             layersPool.addLayer(renderedListItems.shift());
             topRenderedItem = renderedListItems[0];
         }
 
-        while (renderedListItems.length > 1 && bottomRenderedItem && bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
+        while (renderedListItems.length > 1 && lastItemToRenderIndex != bottomRenderedItem.getItemIndex()) {
             layersPool.addLayer(renderedListItems.pop());
             bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
         }
@@ -91,8 +115,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
 
         var itemIdentifier = (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : ''),
-            height = listConfig.itemHeightGetter && listConfig.itemHeightGetter(index),
-            layer = borrowLayerForIndex(index, itemIdentifier, height);
+            layer = borrowLayerForIndex(index, itemIdentifier);
         listConfig.itemRenderer(index, layer.getDomElement());
         return layer;
     }
@@ -100,14 +123,14 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
     /*
      Borrow a layer from the LayersPool and attach it to a certain item at index.
      */
-    function borrowLayerForIndex(index, identifier, height) {
+    function borrowLayerForIndex(index, identifier) {
         var layerIdentifier = identifier || (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : '');
         var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
         if (layer == null) {
             layer = new Layer(scrollElement);
         }
         //index, topOffset, renderer, width, height, itemIdentifier
-        var itemHeight = height || listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
+        var itemHeight = !listConfig.recalculateItemHeights && listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
         layer.attach(index, itemWidth - 9, itemHeight, layerIdentifier);
         //listItems.push(layer);
         return layer;

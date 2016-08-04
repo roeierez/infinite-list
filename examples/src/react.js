@@ -30,6 +30,8 @@ var list = new InfiniteList({
         }, 2000);
     },
 
+    recalculateItemHeights: true,
+
     initialPage: {
         hasMore: true,
         itemsCount: 100

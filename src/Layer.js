@@ -12,7 +12,6 @@ var Layer = function (parentElement) {
 
     function attach(index, width, height, itemIdentifier) {
         itemIndex = index;
-        itemHeight = height;
         StyleHelpers.applyElementStyle(listItemElement, {
             width: width + 'px',
             height: height + 'px',

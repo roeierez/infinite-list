@@ -74,6 +74,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    var config = {
 	            itemHeightGetter: null,
+	            recalculateItemHeights: false,
 	            itemRenderer: null,
 	            itemTypeGetter: null,
 	            pageFetcher: null,
@@ -81,7 +82,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
 	            },
 	            hasMore: false,
-	            useNativeScroller: true,
+	            useNativeScroller: false,
 	            itemsCount: 0
 	        },
 	        parentElement = null,
@@ -95,6 +96,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topOffset = 0,
 	        scrollToIndex = 0,
 	        topItemOffset = 0,
+	        numberOfRenderedItemsAhead = 2,
 	        needsRender = true;
 
 	    for (key in listConfig){
@@ -107,6 +109,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (initialPageConfig){
 	        config.itemsCount = initialPageConfig.itemsCount || 0;
 	        config.hasMore = initialPageConfig.hasMore || false;
+	        numberOfRenderedItemsAhead = initialPageConfig.itemsCount || 1;
 	    }
 
 	    function attach(domElement, touchProvider){
@@ -236,7 +239,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!config.useNativeScroller) {
 	            StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        }
-	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, numberOfRenderedItemsAhead);
 	        renderedItems = itemsRenderer.getRenderedItems();
 
 	        scrollToIndex = null;
@@ -266,8 +269,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
 	            config.hasMore = hasMore;
 	            config.itemsCount += pageItemsCount;
+	            if (config.useNativeScroller) {
+	                numberOfRenderedItemsAhead = pageItemsCount;
+	            }
 	            calculateHeights(config.itemsCount - pageItemsCount);
 	            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
+	            if (config.useNativeScroller) {
+
+	            }
 	        });
 	    }
 
@@ -293,8 +302,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        //we only need to do something if the index points to a rendered item.
 	        if (renderedListItem) {
-	            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
-	                startOffset = renderedListItem.getItemOffset();
+	            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index);
 
 	            if (!newHeight) {
 	                newHeight = renderedListItem.getDomElement().clientHeight;
@@ -714,7 +722,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        renderedListItems = [],
 	        layersPool = new LayersPool();
 
-	    function render(topOffset, atIndex, offsetFromTop){
+	    function render(topOffset, atIndex, offsetFromTop, minNumberOfItemsAhead){
 	        var startRenderTime = new Date().getTime();
 
 	        if ( typeof atIndex == 'number' &&  atIndex >= 0){
@@ -731,6 +739,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var topRenderedItem = renderedListItems[0],
 	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 
+	        //render top items;
 	        while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
 	            topRenderedItem = renderBefore(topRenderedItem);
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
@@ -738,15 +747,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 
+	        //rener load more
 	        if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
 	            var bottomIndex = bottomRenderedItem.getItemIndex();
 	            layersPool.addLayer(renderedListItems.pop());
 	            if (renderedListItems.length > 0) {
 	                bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	            } else {
-	                return render(topOffset, bottomIndex);
+	                return render(topOffset, bottomIndex, undefined, minNumberOfItemsAhead);
 	            }
 	        }
+
+	        //render bottom items;
 	        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
 	            bottomRenderedItem = renderAfter(bottomRenderedItem);
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
@@ -754,12 +766,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 
+	        var bottomVisibleItem = renderedListItems[renderedListItems.length - 1];
+	        for (var i=0; i < renderedListItems.length; ++i) {
+	            if (renderedListItems[i].getItemOffset() + renderedListItems[i].getItemHeight() >= topOffset + visibleHeight) {
+	                bottomVisibleItem = renderedListItems[i];
+	                break;
+	            }
+	        }
+
+	        if (bottomVisibleItem) {
+	            while (bottomRenderedItem && (bottomRenderedItem.getItemIndex() < bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead)  && bottomRenderedItem.getItemIndex() < listConfig.itemsCount-1) {
+	                bottomRenderedItem = renderAfter(bottomRenderedItem);
+	                if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	                    return true;
+	                }
+	            }
+	        }
+
+	        var lastItemToRenderIndex = Math.min(bottomRenderedItem.getItemIndex(), bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead);
+	        console.error('lastItemToRenderIndex ' + lastItemToRenderIndex);
+
 	        while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
 	            layersPool.addLayer(renderedListItems.shift());
 	            topRenderedItem = renderedListItems[0];
 	        }
 
-	        while (renderedListItems.length > 1 && bottomRenderedItem && bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
+	        while (renderedListItems.length > 1 && lastItemToRenderIndex != bottomRenderedItem.getItemIndex()) {
 	            layersPool.addLayer(renderedListItems.pop());
 	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        }
@@ -794,8 +826,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        var itemIdentifier = (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : ''),
-	            height = listConfig.itemHeightGetter && listConfig.itemHeightGetter(index),
-	            layer = borrowLayerForIndex(index, itemIdentifier, height);
+	            layer = borrowLayerForIndex(index, itemIdentifier);
 	        listConfig.itemRenderer(index, layer.getDomElement());
 	        return layer;
 	    }
@@ -803,14 +834,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /*
 	     Borrow a layer from the LayersPool and attach it to a certain item at index.
 	     */
-	    function borrowLayerForIndex(index, identifier, height) {
+	    function borrowLayerForIndex(index, identifier) {
 	        var layerIdentifier = identifier || (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : '');
 	        var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
 	        if (layer == null) {
 	            layer = new Layer(scrollElement);
 	        }
 	        //index, topOffset, renderer, width, height, itemIdentifier
-	        var itemHeight = height || listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
+	        var itemHeight = !listConfig.recalculateItemHeights && listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
 	        layer.attach(index, itemWidth - 9, itemHeight, layerIdentifier);
 	        //listItems.push(layer);
 	        return layer;
@@ -868,7 +899,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function attach(index, width, height, itemIdentifier) {
 	        itemIndex = index;
-	        itemHeight = height;
 	        StyleHelpers.applyElementStyle(listItemElement, {
 	            width: width + 'px',
 	            height: height + 'px',
@@ -1012,6 +1042,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            callback(100, true);
 	        }, 2000);
 	    },
+
+	    recalculateItemHeights: true,
 
 	    initialPage: {
 	        hasMore: true,

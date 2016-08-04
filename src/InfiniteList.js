@@ -10,6 +10,7 @@ var InfiniteList = function (listConfig) {
 
     var config = {
             itemHeightGetter: null,
+            recalculateItemHeights: false,
             itemRenderer: null,
             itemTypeGetter: null,
             pageFetcher: null,
@@ -17,7 +18,7 @@ var InfiniteList = function (listConfig) {
                 domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
             },
             hasMore: false,
-            useNativeScroller: true,
+            useNativeScroller: false,
             itemsCount: 0
         },
         parentElement = null,
@@ -31,6 +32,7 @@ var InfiniteList = function (listConfig) {
         topOffset = 0,
         scrollToIndex = 0,
         topItemOffset = 0,
+        numberOfRenderedItemsAhead = 2,
         needsRender = true;
 
     for (key in listConfig){
@@ -43,6 +45,7 @@ var InfiniteList = function (listConfig) {
     if (initialPageConfig){
         config.itemsCount = initialPageConfig.itemsCount || 0;
         config.hasMore = initialPageConfig.hasMore || false;
+        numberOfRenderedItemsAhead = initialPageConfig.itemsCount || 1;
     }
 
     function attach(domElement, touchProvider){
@@ -172,7 +175,7 @@ var InfiniteList = function (listConfig) {
         if (!config.useNativeScroller) {
             StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
         }
-        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, numberOfRenderedItemsAhead);
         renderedItems = itemsRenderer.getRenderedItems();
 
         scrollToIndex = null;
@@ -202,8 +205,14 @@ var InfiniteList = function (listConfig) {
         config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
             config.hasMore = hasMore;
             config.itemsCount += pageItemsCount;
+            if (config.useNativeScroller) {
+                numberOfRenderedItemsAhead = pageItemsCount;
+            }
             calculateHeights(config.itemsCount - pageItemsCount);
             scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
+            if (config.useNativeScroller) {
+
+            }
         });
     }
 
@@ -229,8 +238,7 @@ var InfiniteList = function (listConfig) {
 
         //we only need to do something if the index points to a rendered item.
         if (renderedListItem) {
-            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
-                startOffset = renderedListItem.getItemOffset();
+            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index);
 
             if (!newHeight) {
                 newHeight = renderedListItem.getDomElement().clientHeight;
