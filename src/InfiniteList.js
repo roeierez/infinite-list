@@ -210,6 +210,7 @@ var InfiniteList = function (listConfig) {
             }
             calculateHeights(config.itemsCount - pageItemsCount);
             scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
+            //scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems()[0].getItemOffset()]);
             if (config.useNativeScroller) {
 
             }

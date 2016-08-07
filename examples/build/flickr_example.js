@@ -335,6 +335,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	            calculateHeights(config.itemsCount - pageItemsCount);
 	            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
+	            //scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems()[0].getItemOffset()]);
 	            if (config.useNativeScroller) {
 
 	            }
@@ -367,7 +368,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            if (!newHeight) {
 	                newHeight = renderedListItem.getDomElement().clientHeight;
-	                console.error('updating height index ' + index + ' height=' + newHeight);
 	                listItemsHeights[index] = newHeight;
 	            }
 
@@ -796,38 +796,49 @@ return /******/ (function(modules) { // webpackBootstrap
 	            renderedListItems.push(onlyRenderedItem);
 	        }
 
+	        //clean top items
+	        while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() < topOffset) {
+	            layersPool.addLayer(renderedListItems.shift());
+	        }
 
-	        var topRenderedItem = renderedListItems[0],
-	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+	       // var topRenderedItem = renderedListItems[0],
+	        //    bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 
-	        //render top items;
-	        while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
+	        //fill up
+	        var topRenderedItem = renderedListItems[0];
+	        while (topRenderedItem && topRenderedItem.getItemIndex() > 0 && topRenderedItem.getItemOffset() > topOffset) {
 	            topRenderedItem = renderBefore(topRenderedItem);
+	            if (renderedListItems[renderedListItems.length - 1].getItemOffset() > topOffset + visibleHeight) {
+	                layersPool.addLayer(renderedListItems.pop());
+	            }
+
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
 	                return true;
 	            }
 	        }
 
-	        //rener load more
+
+
+	        //fill down
+	        var bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
-	            var bottomIndex = bottomRenderedItem.getItemIndex();
 	            layersPool.addLayer(renderedListItems.pop());
-	            if (renderedListItems.length > 0) {
-	                bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
-	            } else {
-	                return render(topOffset, bottomIndex, undefined, minNumberOfItemsAhead);
-	            }
+	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        }
 
-	        //render bottom items;
-	        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
+	        while(bottomRenderedItem && bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight) {
 	            bottomRenderedItem = renderAfter(bottomRenderedItem);
+	            if (renderedListItems[0].getItemOffset() + renderedListItems[0].getItemHeight() < topOffset) {
+	                layersPool.addLayer(renderedListItems.shift());
+	            }
+
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
 	                return true;
 	            }
 	        }
 
-	        var bottomVisibleItem = renderedListItems[renderedListItems.length - 1];
+	        //find bottom visible item
+	        var bottomVisibleItem = renderedListItems[0];
 	        for (var i=0; i < renderedListItems.length; ++i) {
 	            if (renderedListItems[i].getItemOffset() + renderedListItems[i].getItemHeight() >= topOffset + visibleHeight) {
 	                bottomVisibleItem = renderedListItems[i];
@@ -835,27 +846,86 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 
-	        if (bottomVisibleItem) {
-	            while (bottomRenderedItem && (bottomRenderedItem.getItemIndex() < bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead)  && bottomRenderedItem.getItemIndex() < listConfig.itemsCount-1) {
-	                bottomRenderedItem = renderAfter(bottomRenderedItem);
-	                if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
-	                    return true;
-	                }
-	            }
-	        }
-
-	        var lastItemToRenderIndex = Math.min(bottomRenderedItem.getItemIndex(), bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead);
-	        console.error('lastItemToRenderIndex ' + lastItemToRenderIndex);
-
-	        while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
-	            layersPool.addLayer(renderedListItems.shift());
-	            topRenderedItem = renderedListItems[0];
-	        }
-
-	        while (renderedListItems.length > 1 && lastItemToRenderIndex != bottomRenderedItem.getItemIndex()) {
+	        //clean items pased bottom + minNumberOfItemsAhead
+	        while ( bottomRenderedItem && bottomRenderedItem.getItemIndex() > bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead ) {
 	            layersPool.addLayer(renderedListItems.pop());
 	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        }
+
+	        while (bottomRenderedItem && bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getItemIndex() < bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead) {
+	            bottomRenderedItem = renderAfter(bottomRenderedItem);
+	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	                return true;
+	            }
+	        }
+
+	        // //render top items;
+	        // while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
+	        //     var previousTop = topRenderedItem;
+	        //     topRenderedItem = renderBefore(topRenderedItem);
+	        //
+	        //     if (previousTop.getItemOffset() > topOffset + visibleHeight) {
+	        //         layersPool.addLayer(renderedListItems.splice(1,1)[0]);
+	        //     }
+	        //
+	        //     if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	        //         return true;
+	        //     }
+	        // }
+	        //
+	        // //rener load more
+	        // if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
+	        //     var bottomIndex = bottomRenderedItem.getItemIndex();
+	        //     layersPool.addLayer(renderedListItems.pop());
+	        //     if (renderedListItems.length > 0) {
+	        //         bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+	        //     } else {
+	        //         return render(topOffset, bottomIndex, undefined, minNumberOfItemsAhead);
+	        //     }
+	        // }
+	        //
+	        // //render bottom items;
+	        // while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
+	        //
+	        //     var previousBottom = bottomRenderedItem;
+	        //     bottomRenderedItem = renderAfter(previousBottom);
+	        //     if (previousBottom.getItemOffset() + previousBottom.getItemHeight() < topOffset) {
+	        //         layersPool.addLayer(renderedListItems.splice(renderedListItems.length-2, 1)[0]);
+	        //     }
+	        //
+	        //     if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	        //         return true;
+	        //     }
+	        // }
+	        //
+	        // var bottomVisibleItem = renderedListItems[0];
+	        // for (var i=0; i < renderedListItems.length; ++i) {
+	        //     if (renderedListItems[i].getItemOffset() + renderedListItems[i].getItemHeight() >= topOffset + visibleHeight) {
+	        //         bottomVisibleItem = renderedListItems[i];
+	        //         break;
+	        //     }
+	        // }
+	        //
+	        // if (bottomVisibleItem) {
+	        //     while (bottomRenderedItem && (bottomRenderedItem.getItemIndex() < bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead)  && bottomRenderedItem.getItemIndex() < listConfig.itemsCount-1) {
+	        //         bottomRenderedItem = renderAfter(bottomRenderedItem);
+	        //         if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	        //             return true;
+	        //         }
+	        //     }
+	        // }
+	        //
+	        // var lastItemToRenderIndex = Math.min(bottomRenderedItem.getItemIndex(), bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead);
+	        //
+	        // while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
+	        //     layersPool.addLayer(renderedListItems.shift());
+	        //     topRenderedItem = renderedListItems[0];
+	        // }
+	        //
+	        // while (renderedListItems.length > 1 && lastItemToRenderIndex != bottomRenderedItem.getItemIndex()) {
+	        //     layersPool.addLayer(renderedListItems.pop());
+	        //     bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+	        // }
 
 	        return false;
 	    }

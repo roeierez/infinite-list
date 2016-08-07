@@ -26,15 +26,17 @@ var list = new InfiniteList({
         }
 
         setTimeout(function(){
-            callback(100, true);
+            callback(10, true);
         }, 2000);
     },
+
+    useNativeScroller: true,
 
     recalculateItemHeights: true,
 
     initialPage: {
         hasMore: true,
-        itemsCount: 100
+        itemsCount: 10
     }
 
 });
