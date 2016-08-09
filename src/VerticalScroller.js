@@ -114,8 +114,7 @@ var VerticalScroller = function (parentElement, callback) {
         frame = offset;
         timestamp = Date.now();
         recordTouches(e);
-
-        e.preventDefault();
+        
         e.stopPropagation();
     }
 
@@ -171,7 +170,6 @@ var VerticalScroller = function (parentElement, callback) {
         timestamp = Date.now();
         requestAnimationFrame(autoScroll);
 
-        e.preventDefault();
         e.stopPropagation();
     }
 
