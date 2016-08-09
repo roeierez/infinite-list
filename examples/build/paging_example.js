@@ -428,8 +428,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        frame = offset;
 	        timestamp = Date.now();
 	        recordTouches(e);
-
-	        e.preventDefault();
+	        
 	        e.stopPropagation();
 	    }
 
@@ -485,7 +484,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        timestamp = Date.now();
 	        requestAnimationFrame(autoScroll);
 
-	        e.preventDefault();
 	        e.stopPropagation();
 	    }
 
