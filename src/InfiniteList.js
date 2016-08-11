@@ -4,7 +4,8 @@ var VerticalScroller = require('./VerticalScroller'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     ListItemsRenderer = require('./ListItemsRenderer'),
     StyleHelpers = require('./StyleHelpers');
-    DEFAULT_ITEM_HEIGHT = 2;
+    DEFAULT_ITEM_HEIGHT = 2,
+    RESIZE_CHECK_INTERVAL = 500;
 
 var InfiniteList = function (listConfig) {
 
@@ -33,7 +34,8 @@ var InfiniteList = function (listConfig) {
         scrollToIndex = 0,
         topItemOffset = 0,
         numberOfRenderedItemsAhead = 2,
-        needsRender = true;
+        needsRender = true,
+        lastSizeCheck = 0;
 
     for (key in listConfig){
         if (listConfig.hasOwnProperty(key)){
@@ -77,7 +79,6 @@ var InfiniteList = function (listConfig) {
             );
         }
 
-        window.addEventListener('resize', refresh.bind(this));
         runAnimationLoop();
         refresh();
         return this;
@@ -86,15 +87,27 @@ var InfiniteList = function (listConfig) {
     function detach() {
         AnimationFrameHelper.stopAnimationLoop();
         parentElement.removeChild(rootElement);
-        window.removeEventListener('resize', refresh.bind(this));
     }
 
     function runAnimationLoop(){
         AnimationFrameHelper.startAnimationLoop(function(){
-            if (needsRender) {
+            if (needsResize()) {
+                refresh();
+            }
+             else if (needsRender) {
                 render();
             }
         });
+    }
+
+    function needsResize(){
+        var now = Date.now();
+        if (now - lastSizeCheck > RESIZE_CHECK_INTERVAL) {
+            var currentHeight = parentElement.clientHeight;
+            lastSizeCheck = now;
+            return currentHeight != parentElementHeight;
+        }
+        return false;
     }
 
     function calculateHeights(fromIndex) {
@@ -106,14 +119,15 @@ var InfiniteList = function (listConfig) {
     function initializeRootElement(parentElement) {
         scrollElement = document.createElement('div');
         StyleHelpers.applyElementStyle(scrollElement, {
-            position: config.useNativeScroller ? 'relative' : 'absolute'
+            position: config.useNativeScroller ? 'relative' : 'absolute',
+            width: '100%'
         });
 
         rootElement = document.createElement('div');
         StyleHelpers.applyElementStyle(rootElement, {
             position: 'relative',
-            height: parentElement.clientHeight + 'px',
-            width: parentElement.clientWidth + 'px',
+            height: '100%',
+            width: '100%',
             overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
         });
         rootElement.appendChild(scrollElement);
@@ -128,10 +142,6 @@ var InfiniteList = function (listConfig) {
             differenceFromTop = topOffset - topItemStartsAt;
 
         parentElementHeight = parentElement.clientHeight;
-        StyleHelpers.applyElementStyle(rootElement, {
-            height: parentElement.clientHeight + 'px',
-            width: parentElement.clientWidth + 'px'
-        });
         itemsRenderer.refresh();
         calculateHeights();
         if (scrollbarRenderer) {

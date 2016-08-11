@@ -133,7 +133,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
         //index, topOffset, renderer, width, height, itemIdentifier
         var itemHeight = !listConfig.recalculateItemHeights && listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
-        layer.attach(index, itemWidth - 9, itemHeight, layerIdentifier);
+        layer.attach(index, listConfig.useNativeScroller ? 0 : 13, itemHeight, layerIdentifier);
         //listItems.push(layer);
         return layer;
     }

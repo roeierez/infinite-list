@@ -5,7 +5,7 @@ var template = React.createClass({
     },
 
     render: function(){
-        return  <article syle="height: 200px">
+        return  <article>
                     <div className="title">
                         {this.props.title}
                     </div>

@@ -129,7 +129,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    AnimationFrameHelper = __webpack_require__(7),
 	    ListItemsRenderer = __webpack_require__(8),
 	    StyleHelpers = __webpack_require__(5);
-	    DEFAULT_ITEM_HEIGHT = 2;
+	    DEFAULT_ITEM_HEIGHT = 2,
+	    RESIZE_CHECK_INTERVAL = 500;
 
 	var InfiniteList = function (listConfig) {
 
@@ -158,7 +159,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scrollToIndex = 0,
 	        topItemOffset = 0,
 	        numberOfRenderedItemsAhead = 2,
-	        needsRender = true;
+	        needsRender = true,
+	        lastSizeCheck = 0;
 
 	    for (key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
@@ -202,7 +204,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            );
 	        }
 
-	        window.addEventListener('resize', refresh.bind(this));
 	        runAnimationLoop();
 	        refresh();
 	        return this;
@@ -211,15 +212,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function detach() {
 	        AnimationFrameHelper.stopAnimationLoop();
 	        parentElement.removeChild(rootElement);
-	        window.removeEventListener('resize', refresh.bind(this));
 	    }
 
 	    function runAnimationLoop(){
 	        AnimationFrameHelper.startAnimationLoop(function(){
-	            if (needsRender) {
+	            if (needsResize()) {
+	                refresh();
+	            }
+	             else if (needsRender) {
 	                render();
 	            }
 	        });
+	    }
+
+	    function needsResize(){
+	        var now = Date.now();
+	        if (now - lastSizeCheck > RESIZE_CHECK_INTERVAL) {
+	            var currentHeight = parentElement.clientHeight;
+	            lastSizeCheck = now;
+	            return currentHeight != parentElementHeight;
+	        }
+	        return false;
 	    }
 
 	    function calculateHeights(fromIndex) {
@@ -231,14 +244,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function initializeRootElement(parentElement) {
 	        scrollElement = document.createElement('div');
 	        StyleHelpers.applyElementStyle(scrollElement, {
-	            position: config.useNativeScroller ? 'relative' : 'absolute'
+	            position: config.useNativeScroller ? 'relative' : 'absolute',
+	            width: '100%'
 	        });
 
 	        rootElement = document.createElement('div');
 	        StyleHelpers.applyElementStyle(rootElement, {
 	            position: 'relative',
-	            height: parentElement.clientHeight + 'px',
-	            width: parentElement.clientWidth + 'px',
+	            height: '100%',
+	            width: '100%',
 	            overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
 	        });
 	        rootElement.appendChild(scrollElement);
@@ -253,10 +267,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            differenceFromTop = topOffset - topItemStartsAt;
 
 	        parentElementHeight = parentElement.clientHeight;
-	        StyleHelpers.applyElementStyle(rootElement, {
-	            height: parentElement.clientHeight + 'px',
-	            width: parentElement.clientWidth + 'px'
-	        });
 	        itemsRenderer.refresh();
 	        calculateHeights();
 	        if (scrollbarRenderer) {
@@ -903,7 +913,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        //index, topOffset, renderer, width, height, itemIdentifier
 	        var itemHeight = !listConfig.recalculateItemHeights && listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
-	        layer.attach(index, itemWidth - 9, itemHeight, layerIdentifier);
+	        layer.attach(index, listConfig.useNativeScroller ? 0 : 13, itemHeight, layerIdentifier);
 	        //listItems.push(layer);
 	        return layer;
 	    }
@@ -958,10 +968,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    listItemElement = createListItemWrapperElement();
 	    parentElement.appendChild(listItemElement);
 
-	    function attach(index, width, height, itemIdentifier) {
+	    function attach(index, right, height, itemIdentifier) {
 	        itemIndex = index;
 	        StyleHelpers.applyElementStyle(listItemElement, {
-	            width: width + 'px',
+	            right: right + 'px',
+	            width: '100%',
 	            height: height + 'px',
 	            overflow: 'hidden'
 	        });
@@ -1077,7 +1088,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 
 	    render: function(){
-	        return  React.createElement("article", {syle: "height: 200px"}, 
+	        return  React.createElement("article", null, 
 	                    React.createElement("div", {className: "title"}, 
 	                        this.props.title
 	                    ), 

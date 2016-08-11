@@ -10,10 +10,11 @@ var Layer = function (parentElement) {
     listItemElement = createListItemWrapperElement();
     parentElement.appendChild(listItemElement);
 
-    function attach(index, width, height, itemIdentifier) {
+    function attach(index, right, height, itemIdentifier) {
         itemIndex = index;
         StyleHelpers.applyElementStyle(listItemElement, {
-            width: width + 'px',
+            right: right + 'px',
+            width: '100%',
             height: height + 'px',
             overflow: 'hidden'
         });
