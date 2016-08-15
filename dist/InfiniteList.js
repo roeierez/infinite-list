@@ -62,16 +62,19 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var VerticalScroller = __webpack_require__(2),
-	    ScrollbarRenderer = __webpack_require__(3),
-	    AnimationFrameHelper = __webpack_require__(5),
-	    ListItemsRenderer = __webpack_require__(6),
+	    NativeScroller = __webpack_require__(3)
+	    ScrollbarRenderer = __webpack_require__(5),
+	    AnimationFrameHelper = __webpack_require__(6),
+	    ListItemsRenderer = __webpack_require__(7),
 	    StyleHelpers = __webpack_require__(4);
-	    DEFAULT_ITEM_HEIGHT = 2;
+	    DEFAULT_ITEM_HEIGHT = 2,
+	    RESIZE_CHECK_INTERVAL = 500;
 
 	var InfiniteList = function (listConfig) {
 
 	    var config = {
 	            itemHeightGetter: null,
+	            recalculateItemHeights: false,
 	            itemRenderer: null,
 	            itemTypeGetter: null,
 	            pageFetcher: null,
@@ -79,6 +82,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
 	            },
 	            hasMore: false,
+	            useNativeScroller: false,
 	            itemsCount: 0
 	        },
 	        parentElement = null,
@@ -92,7 +96,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topOffset = 0,
 	        scrollToIndex = 0,
 	        topItemOffset = 0,
-	        needsRender = true;
+	        numberOfRenderedItemsAhead = 2,
+	        needsRender = true,
+	        lastSizeCheck = 0;
 
 	    for (key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
@@ -104,28 +110,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (initialPageConfig){
 	        config.itemsCount = initialPageConfig.itemsCount || 0;
 	        config.hasMore = initialPageConfig.hasMore || false;
+	        numberOfRenderedItemsAhead = initialPageConfig.itemsCount || 1;
 	    }
 
 	    function attach(domElement, touchProvider){
 	        parentElement = domElement;
 	        initializeRootElement(domElement);
-	        scrollbarRenderer = new ScrollbarRenderer(rootElement);
 	        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
-	        scroller = new VerticalScroller(
-	            parentElement,
-	            function (top) {
-	                topOffset = (top || 0);
-	                needsRender = true;
-	            },
-	            touchProvider
-	        );
+	        if (config.useNativeScroller) {
+	            scroller = new NativeScroller(
+	                rootElement,
+	                function (top) {
+	                    topOffset = (top || 0);
+	                    needsRender = true;
+	                }
+	            );
+	        } else {
+	            scrollbarRenderer = new ScrollbarRenderer(rootElement);
+	            scroller = new VerticalScroller(
+	                parentElement,
+	                function (top) {
+	                    topOffset = (top || 0);
+	                    needsRender = true;
+	                },
+	                touchProvider
+	            );
 
-	        scroller.setDimensions(
-	            Number.MIN_SAFE_INTEGER,
-	            Number.MAX_SAFE_INTEGER
-	        );
+	            scroller.setDimensions(
+	                Number.MIN_SAFE_INTEGER,
+	                Number.MAX_SAFE_INTEGER
+	            );
+	        }
 
-	        window.addEventListener('resize', refresh.bind(this));
 	        runAnimationLoop();
 	        refresh();
 	        return this;
@@ -134,39 +150,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function detach() {
 	        AnimationFrameHelper.stopAnimationLoop();
 	        parentElement.removeChild(rootElement);
-	        window.removeEventListener('resize', refresh.bind(this));
 	    }
 
 	    function runAnimationLoop(){
 	        AnimationFrameHelper.startAnimationLoop(function(){
-	            if (needsRender) {
+	           if (needsRender) {
 	                render();
 	            }
 	        });
 	    }
 
 	    function calculateHeights(fromIndex) {
-	        if (config.itemHeightGetter) {
-	            for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
-	                listItemsHeights[i] = config.itemHeightGetter(i);
-	            }
+	        for (var i = fromIndex || 0; i < config.itemsCount || 0; ++i) {
+	            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i);
+	        }
+	        if (config.hasMore) {
+	            listItemsHeights[config.itemsCount] = 200;
 	        }
 	    }
 
 	    function initializeRootElement(parentElement) {
 	        scrollElement = document.createElement('div');
 	        StyleHelpers.applyElementStyle(scrollElement, {
-	            position: 'absolute',
-	            top: 0,
-	            bottom: 0
+	            position: config.useNativeScroller ? 'relative' : 'absolute',
+	            width: '100%'
 	        });
 
 	        rootElement = document.createElement('div');
 	        StyleHelpers.applyElementStyle(rootElement, {
 	            position: 'relative',
-	            height: parentElement.clientHeight + 'px',
-	            width: parentElement.clientWidth + 'px',
-	            overflow: 'hidden'
+	            height: '100%',
+	            width: '100%',
+	            overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
 	        });
 	        rootElement.appendChild(scrollElement);
 	        parentElement.appendChild(
@@ -180,13 +195,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            differenceFromTop = topOffset - topItemStartsAt;
 
 	        parentElementHeight = parentElement.clientHeight;
-	        StyleHelpers.applyElementStyle(rootElement, {
-	            height: parentElement.clientHeight + 'px',
-	            width: parentElement.clientWidth + 'px'
-	        });
 	        itemsRenderer.refresh();
 	        calculateHeights();
-	        scrollbarRenderer.refresh();
+	        if (scrollbarRenderer) {
+	            scrollbarRenderer.refresh();
+	        }
 	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
@@ -205,15 +218,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
 	        }
 
-	        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	        if (config.useNativeScroller) {
+	            var totalHeight = 0;
+	            listItemsHeights.forEach(function(h){
+	                totalHeight += h;
+	            });
+	            StyleHelpers.applyElementStyle(scrollElement, {
+	                height: totalHeight + 'px'
+	            });
+	        } else {
+	            scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	        }
 	    }
 
 	    function render() {
 	        var renderedItems;
 
 	        updateScroller();
-	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
-	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+	        if (!config.useNativeScroller) {
+	            StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
+	        }
+	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, numberOfRenderedItemsAhead);
 	        renderedItems = itemsRenderer.getRenderedItems();
 
 	        scrollToIndex = null;
@@ -234,15 +259,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 	        avarageItemHeight = avarageItemHeight / itemsCount;
-	        scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+	        if (scrollbarRenderer) {
+	            scrollbarRenderer.render(avarageItemHeight * renderedItems[0].getItemIndex() + topOffset - renderedItems[0].getItemOffset(), avarageItemHeight * config.itemsCount);
+	        }
 	    }
 
 	    function loadMoreCallback(){
 	        config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
 	            config.hasMore = hasMore;
 	            config.itemsCount += pageItemsCount;
+	            if (config.useNativeScroller) {
+	                numberOfRenderedItemsAhead = pageItemsCount;
+	            }
 	            calculateHeights(config.itemsCount - pageItemsCount);
 	            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
+	            //scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems()[0].getItemOffset()]);
+	            if (config.useNativeScroller) {
+
+	            }
 	        });
 	    }
 
@@ -268,11 +302,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        //we only need to do something if the index points to a rendered item.
 	        if (renderedListItem) {
-	            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index),
-	                startOffset = renderedListItem.getItemOffset();
+	            var newHeight = config.itemHeightGetter && config.itemHeightGetter(index);
 
 	            if (!newHeight) {
-	                newHeight = renderedListItem.getDomElement().clientHeight
+	                newHeight = renderedListItem.getDomElement().clientHeight;
+	                listItemsHeights[index] = newHeight;
 	            }
 
 	            renderedListItem.setItemHeight(newHeight);
@@ -427,8 +461,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        frame = offset;
 	        timestamp = Date.now();
 	        recordTouches(e);
-
-	        e.preventDefault();
+	        
 	        e.stopPropagation();
 	    }
 
@@ -484,7 +517,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        timestamp = Date.now();
 	        requestAnimationFrame(autoScroll);
 
-	        e.preventDefault();
 	        e.stopPropagation();
 	    }
 
@@ -531,6 +563,61 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var StyleHelpers = __webpack_require__(4);
 
+	var NativeScroller = function (scrollElement, callback) {
+
+	    scrollElement.addEventListener('scroll', function(){
+	        callback(scrollElement.scrollTop);
+	    });
+
+	    return {
+	        setDimensions: function(min, max){
+	            StyleHelpers.applyElementStyle(scrollElement, {
+	                height: (max - min) + 'px'
+	            });
+	        },
+	        scrollTo: function(){
+	            callback(scrollElement.scrollTop);
+	        }
+	    }
+	}
+
+	module.exports = NativeScroller;
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	
+	var applyElementStyle = function (element, styleObj) {
+	        Object.keys(styleObj).forEach(function (key) {
+	            if (element.style[key] != styleObj[key]) {
+	                element.style[key] = styleObj[key];
+	            }
+	        })
+	    },
+
+	    applyTransformStyle = function(element, transformValue){
+	        var styleObject = {};
+	        ['webkit', 'Moz', 'O', 'ms'].forEach(function(prefix){
+	                styleObject[prefix + 'Transform'] = transformValue;
+	            }
+	        );
+	        applyElementStyle(element, styleObject);
+	};
+
+	module.exports = {
+	    applyElementStyle: applyElementStyle,
+	    applyTransformStyle: applyTransformStyle
+	};
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var StyleHelpers = __webpack_require__(4);
+
 	var ScrollbarRenderer = function(rootElement){
 	    var scrollbar = document.createElement('div'),
 	        clientHeight = rootElement.parentElement.clientHeight;
@@ -573,35 +660,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 4 */
-/***/ function(module, exports) {
-
-	
-	var applyElementStyle = function (element, styleObj) {
-	        Object.keys(styleObj).forEach(function (key) {
-	            if (element.style[key] != styleObj[key]) {
-	                element.style[key] = styleObj[key];
-	            }
-	        })
-	    },
-
-	    applyTransformStyle = function(element, transformValue){
-	        var styleObject = {};
-	        ['webkit', 'Moz', 'O', 'ms'].forEach(function(prefix){
-	                styleObject[prefix + 'Transform'] = transformValue;
-	            }
-	        );
-	        applyElementStyle(element, styleObject);
-	};
-
-	module.exports = {
-	    applyElementStyle: applyElementStyle,
-	    applyTransformStyle: applyTransformStyle
-	};
-
-
-/***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports) {
 
 	
@@ -644,12 +703,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Layer = __webpack_require__(7),
-	    LayersPool = __webpack_require__(8),
-	    AnimationFrameHelper = __webpack_require__(5),
+	var Layer = __webpack_require__(8),
+	    LayersPool = __webpack_require__(9),
+	    AnimationFrameHelper = __webpack_require__(6),
 	    MIN_FPS = 30,
 	    MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
 
@@ -660,7 +719,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        renderedListItems = [],
 	        layersPool = new LayersPool();
 
-	    function render(topOffset, atIndex, offsetFromTop){
+	    function render(topOffset, atIndex, offsetFromTop, minNumberOfItemsAhead){
 	        var startRenderTime = new Date().getTime();
 
 	        if ( typeof atIndex == 'number' &&  atIndex >= 0){
@@ -673,41 +732,67 @@ return /******/ (function(modules) { // webpackBootstrap
 	            renderedListItems.push(onlyRenderedItem);
 	        }
 
+	        //clean top items
+	        while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() < topOffset) {
+	            layersPool.addLayer(renderedListItems.shift());
+	        }
 
-	        var topRenderedItem = renderedListItems[0],
-	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
-
-	        while (topRenderedItem && topRenderedItem.getItemOffset() > topOffset && topRenderedItem.getItemIndex() > 0){
+	        //fill up
+	        var topRenderedItem = renderedListItems[0];
+	        while (topRenderedItem && topRenderedItem.getItemIndex() > 0 && topRenderedItem.getItemOffset() > topOffset) {
 	            topRenderedItem = renderBefore(topRenderedItem);
+	            if (renderedListItems[renderedListItems.length - 1].getItemOffset() > topOffset + visibleHeight) {
+	                layersPool.addLayer(renderedListItems.pop());
+	            }
+
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
 	                return true;
 	            }
 	        }
 
+	        //fill down
+	        var bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
-	            var bottomIndex = bottomRenderedItem.getItemIndex();
+	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	            layersPool.addLayer(renderedListItems.pop());
-	            if (renderedListItems.length > 0) {
-	                bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+	            if (renderedListItems.length <= 0) {
+	                return render(topOffset, bottomRenderedItem.getItemIndex(), undefined, minNumberOfItemsAhead);
 	            } else {
-	                return render(topOffset, bottomIndex);
+	                bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	            }
 	        }
-	        while (bottomRenderedItem && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight && bottomRenderedItem.getItemIndex() < listConfig.itemsCount) {
+
+	        while(bottomRenderedItem && bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getItemOffset() + bottomRenderedItem.getItemHeight() < topOffset + visibleHeight) {
+	            bottomRenderedItem = renderAfter(bottomRenderedItem);
+	            if (renderedListItems[0].getItemOffset() + renderedListItems[0].getItemHeight() < topOffset) {
+	                layersPool.addLayer(renderedListItems.shift());
+	            }
+
+	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
+	                return true;
+	            }
+	        }
+
+	        //find bottom visible item
+	        var bottomVisibleItem = renderedListItems[0];
+	        for (var i=0; i < renderedListItems.length; ++i) {
+	            if (renderedListItems[i].getItemOffset() + renderedListItems[i].getItemHeight() >= topOffset + visibleHeight) {
+	                bottomVisibleItem = renderedListItems[i];
+	                break;
+	            }
+	        }
+
+	        //clean items pased bottom + minNumberOfItemsAhead
+	        while ( bottomRenderedItem && bottomRenderedItem.getItemIndex() > bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead ) {
+	            layersPool.addLayer(renderedListItems.pop());
+	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
+	        }
+
+	        while (bottomRenderedItem && bottomRenderedItem.getItemIndex() < listConfig.itemsCount-1 && bottomRenderedItem.getItemIndex() < bottomVisibleItem.getItemIndex() + minNumberOfItemsAhead) {
 	            bottomRenderedItem = renderAfter(bottomRenderedItem);
 	            if (new Date().getTime() - startRenderTime > MAX_TIME_PER_FRAME) {
 	                return true;
 	            }
-	        }
-
-	        while (renderedListItems.length > 1 && topRenderedItem && topRenderedItem.getItemOffset() + topRenderedItem.getItemHeight() < topOffset) {
-	            layersPool.addLayer(renderedListItems.shift());
-	            topRenderedItem = renderedListItems[0];
-	        }
-
-	        while (renderedListItems.length > 1 && bottomRenderedItem && bottomRenderedItem.getItemOffset() > topOffset + visibleHeight) {
-	            layersPool.addLayer(renderedListItems.pop());
-	            bottomRenderedItem = renderedListItems[renderedListItems.length - 1];
 	        }
 
 	        return false;
@@ -740,8 +825,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        var itemIdentifier = (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : ''),
-	            height = listConfig.itemHeightGetter && listConfig.itemHeightGetter(index),
-	            layer = borrowLayerForIndex(index, itemIdentifier, height);
+	            layer = borrowLayerForIndex(index, itemIdentifier);
 	        listConfig.itemRenderer(index, layer.getDomElement());
 	        return layer;
 	    }
@@ -749,15 +833,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    /*
 	     Borrow a layer from the LayersPool and attach it to a certain item at index.
 	     */
-	    function borrowLayerForIndex(index, identifier, height) {
+	    function borrowLayerForIndex(index, identifier) {
 	        var layerIdentifier = identifier || (listConfig.itemTypeGetter ? listConfig.itemTypeGetter(index) : '');
 	        var layer = layersPool.borrowLayerWithIdentifier(layerIdentifier);
 	        if (layer == null) {
 	            layer = new Layer(scrollElement);
 	        }
 	        //index, topOffset, renderer, width, height, itemIdentifier
-	        var itemHeight = height || listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
-	        layer.attach(index, itemWidth - 9, itemHeight, layerIdentifier);
+	        var itemHeight = !listConfig.recalculateItemHeights && listConfig.itemHeightGetter && listConfig.itemHeightGetter(index);
+	        layer.attach(index, listConfig.useNativeScroller ? 0 : 13, itemHeight, layerIdentifier);
 	        //listItems.push(layer);
 	        return layer;
 	    }
@@ -797,7 +881,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var StyleHelpers = __webpack_require__(4);
@@ -812,11 +896,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    listItemElement = createListItemWrapperElement();
 	    parentElement.appendChild(listItemElement);
 
-	    function attach(index, width, height, itemIdentifier) {
+	    function attach(index, right, height, itemIdentifier) {
 	        itemIndex = index;
-	        itemHeight = height;
 	        StyleHelpers.applyElementStyle(listItemElement, {
-	            width: width + 'px',
+	            right: right + 'px',
+	            width: '100%',
 	            height: height + 'px',
 	            overflow: 'hidden'
 	        });
@@ -881,7 +965,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var StyleHelpers = __webpack_require__(4),

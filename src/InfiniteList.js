@@ -98,8 +98,11 @@ var InfiniteList = function (listConfig) {
     }
 
     function calculateHeights(fromIndex) {
-        for (var i = fromIndex || 0; i <= config.itemsCount || 0; ++i) {
-            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i) || 200;
+        for (var i = fromIndex || 0; i < config.itemsCount || 0; ++i) {
+            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i);
+        }
+        if (config.hasMore) {
+            listItemsHeights[config.itemsCount] = 200;
         }
     }
 
