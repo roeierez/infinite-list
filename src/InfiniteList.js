@@ -91,23 +91,10 @@ var InfiniteList = function (listConfig) {
 
     function runAnimationLoop(){
         AnimationFrameHelper.startAnimationLoop(function(){
-            if (needsResize()) {
-                refresh();
-            }
-             else if (needsRender) {
+           if (needsRender) {
                 render();
             }
         });
-    }
-
-    function needsResize(){
-        var now = Date.now();
-        if (now - lastSizeCheck > RESIZE_CHECK_INTERVAL) {
-            var currentHeight = parentElement.clientHeight;
-            lastSizeCheck = now;
-            return currentHeight != parentElementHeight;
-        }
-        return false;
     }
 
     function calculateHeights(fromIndex) {
