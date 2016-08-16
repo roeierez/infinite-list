@@ -97,8 +97,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scrollToIndex = 0,
 	        topItemOffset = 0,
 	        numberOfRenderedItemsAhead = 2,
-	        needsRender = true,
-	        lastSizeCheck = 0;
+	        needsRender = true;
 
 	    for (key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
@@ -162,7 +161,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function calculateHeights(fromIndex) {
 	        for (var i = fromIndex || 0; i < config.itemsCount || 0; ++i) {
-	            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i);
+	            listItemsHeights[i] = config.itemHeightGetter && config.itemHeightGetter(i) || listItemsHeights[i];
 	        }
 	        if (config.hasMore) {
 	            listItemsHeights[config.itemsCount] = 200;
@@ -188,18 +187,39 @@ return /******/ (function(modules) { // webpackBootstrap
 	            rootElement);
 	    };
 
-	    function refresh(){
+	    function refresh(initialPage){
 	        var topListItem = itemsRenderer.getRenderedItems()[0],
 	            topListItemIndex = topListItem && topListItem.getItemIndex() || 0,
 	            topItemStartsAt = topListItem && topListItem.getItemOffset() || 0,
 	            differenceFromTop = topOffset - topItemStartsAt;
 
+	        if (initialPage) {
+	            if (initialPage.itemsCount) {
+	                if (config.itemsCount > initialPage.itemsCount) {
+	                    topListItemIndex = 0;
+	                    rootElement.scrollTop = 0;
+	                    differenceFromTop = 0;
+	                } else if (config.itemsCount < initialPage.itemsCount) {
+	                    numberOfRenderedItemsAhead = initialPage.itemsCount - config.itemsCount;
+	                }
+
+	                config.itemsCount = initialPage.itemsCount;
+	                listItemsHeights = listItemsHeights.slice(0, initialPage.itemsCount);
+	            }
+
+	            if (initialPage.hasMore != null) {
+	                config.hasMore = initialPage.hasMore;
+	            }
+	        }
+
 	        parentElementHeight = parentElement.clientHeight;
-	        itemsRenderer.refresh();
+
 	        calculateHeights();
 	        if (scrollbarRenderer) {
 	            scrollbarRenderer.refresh();
 	        }
+
+	        itemsRenderer.refresh();
 	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
@@ -723,6 +743,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var startRenderTime = new Date().getTime();
 
 	        if ( typeof atIndex == 'number' &&  atIndex >= 0){
+	            atIndex = Math.max(0, Math.min(atIndex, listConfig.itemsCount-1));
 	            while (renderedListItems.length > 0) {
 	                layersPool.addLayer(renderedListItems.pop());
 	            }

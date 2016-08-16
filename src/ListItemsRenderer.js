@@ -15,6 +15,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         var startRenderTime = new Date().getTime();
 
         if ( typeof atIndex == 'number' &&  atIndex >= 0){
+            atIndex = Math.max(0, Math.min(atIndex, listConfig.itemsCount-1));
             while (renderedListItems.length > 0) {
                 layersPool.addLayer(renderedListItems.pop());
             }
