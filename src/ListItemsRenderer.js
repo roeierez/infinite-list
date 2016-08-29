@@ -1,5 +1,5 @@
 var Layer = require('./Layer'),
-    LayersPool = require('./layerPool'),
+    LayersPool = require('./LayerPool'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     MIN_FPS = 30,
     MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
