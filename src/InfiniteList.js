@@ -1,9 +1,9 @@
 var VerticalScroller = require('./VerticalScroller'),
-    NativeScroller = require('./NativeScroller')
+    NativeScroller = require('./NativeScroller'),
     ScrollbarRenderer = require('./ScrollbarRenderer'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     ListItemsRenderer = require('./ListItemsRenderer'),
-    StyleHelpers = require('./StyleHelpers');
+    StyleHelpers = require('./StyleHelpers'),
     DEFAULT_ITEM_HEIGHT = 2,
     RESIZE_CHECK_INTERVAL = 500;
 
@@ -36,7 +36,7 @@ var InfiniteList = function (listConfig) {
         numberOfRenderedItemsAhead = 2,
         needsRender = true;
 
-    for (key in listConfig){
+    for (var key in listConfig){
         if (listConfig.hasOwnProperty(key)){
             config[key] = listConfig[key];
         }
