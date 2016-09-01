@@ -30,7 +30,7 @@ var list = new InfiniteList({
         }, 2000);
     },
 
-    useNativeScroller: true,
+    useNativeScroller: false,
 
     recalculateItemHeights: true,
 
@@ -41,4 +41,17 @@ var list = new InfiniteList({
 
 });
 list.attach(document.getElementById('main'));
+
+var index = 5;
+setInterval(function(){
+    var tweetText = 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen';
+
+    listData[index++] = {
+        header: 'Tweet number ' + (i + 1),
+        minutesAgo: i % 20 + 1,
+        tweetText: tweetText + tweetText + tweetText + tweetText
+    };
+
+    list.refresh();
+}, 2000);
 

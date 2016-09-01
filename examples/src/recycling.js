@@ -38,3 +38,6 @@ var list = new InfiniteList({
 
 }).attach(document.getElementById('main'));
 
+setInterval(function(){
+    list.refresh();
+}, 2000);

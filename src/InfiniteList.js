@@ -157,7 +157,6 @@ var InfiniteList = function (listConfig) {
         }
 
         itemsRenderer.refresh();
-        scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
     function updateScroller() {

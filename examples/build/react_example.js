@@ -221,7 +221,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        itemsRenderer.refresh();
-	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
 	    function updateScroller() {
@@ -882,10 +881,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function refresh(){
 	        visibleHeight = attachedElement.clientHeight;
 	        itemWidth = attachedElement.clientWidth;
+
+	        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
 	        renderedListItems.forEach(function(layer){
-	            layersPool.addLayer(layer, true)
+	            listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
+	            layer.setItemOffset(itemOffset);
+	            layer.setItemHeight(0);
+	            itemOffset += layer.getItemHeight();
 	        });
-	        renderedListItems = [];
 	    }
 
 	   function getRenderedItems(){
@@ -1065,7 +1068,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }, 2000);
 	    },
 
-	    useNativeScroller: true,
+	    useNativeScroller: false,
 
 	    recalculateItemHeights: true,
 
@@ -1076,6 +1079,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 	list.attach(document.getElementById('main'));
+
+	var index = 5;
+	setInterval(function(){
+	    var tweetText = 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen';
+
+	    listData[index++] = {
+	        header: 'Tweet number ' + (i + 1),
+	        minutesAgo: i % 20 + 1,
+	        tweetText: tweetText + tweetText + tweetText + tweetText
+	    };
+
+	    list.refresh();
+	}, 2000);
 
 
 

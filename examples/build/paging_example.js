@@ -221,7 +221,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        itemsRenderer.refresh();
-	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
 	    function updateScroller() {
@@ -882,10 +881,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function refresh(){
 	        visibleHeight = attachedElement.clientHeight;
 	        itemWidth = attachedElement.clientWidth;
+
+	        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
 	        renderedListItems.forEach(function(layer){
-	            layersPool.addLayer(layer, true)
+	            listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
+	            layer.setItemOffset(itemOffset);
+	            layer.setItemHeight(0);
+	            itemOffset += layer.getItemHeight();
 	        });
-	        renderedListItems = [];
 	    }
 
 	   function getRenderedItems(){
