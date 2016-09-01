@@ -282,6 +282,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        itemsRenderer.refresh();
+	        if (initialPage) {
+	            scrollToItem(topListItemIndex, false, differenceFromTop);
+	        }
 	    }
 
 	    function updateScroller() {
