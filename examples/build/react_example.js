@@ -215,15 +215,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        parentElementHeight = parentElement.clientHeight;
 
+	        itemsRenderer.refresh();
 	        calculateHeights();
 	        if (scrollbarRenderer) {
 	            scrollbarRenderer.refresh();
 	        }
 
-	        itemsRenderer.refresh();
 	        if (initialPage) {
 	            scrollToItem(topListItemIndex, false, differenceFromTop);
 	        }
+
+	        needsRender=true;
 	    }
 
 	    function updateScroller() {
@@ -268,9 +270,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topItemOffset = null;
 
 
+
+	        var scrollerDiff = 0;
 	        renderedItems.forEach(function(item){
+	            if (item.getItemOffset() < topOffset) {
+	                scrollerDiff += (listItemsHeights[item.getItemIndex()] - item.getItemHeight());
+	            }
 	            listItemsHeights[item.getItemIndex()] = item.getItemHeight();
 	        });
+
+	        if (config.useNativeScroller && (scrollerDiff != 0)) {
+	            rootElement.scrollTop -= scrollerDiff;
+	            renderedItems.forEach(function(item){
+	                item.setItemOffset(item.getItemOffset() - scrollerDiff);
+	            });
+	        }
 
 	        var avarageItemHeight = 0,
 	            itemsCount = 0;
@@ -819,6 +833,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 
+	        //fix offsets.
+	        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
+	        renderedListItems.forEach(function(layer){
+	            if (layer.getItemOffset() != itemOffset) {
+	                layer.setItemOffset(itemOffset);
+	            }
+	            itemOffset += layer.getItemHeight();
+	        });
+
 	        return false;
 	    }
 
@@ -885,12 +908,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        visibleHeight = attachedElement.clientHeight;
 	        itemWidth = attachedElement.clientWidth;
 
-	        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
 	        renderedListItems.forEach(function(layer){
-	            listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
-	            layer.setItemOffset(itemOffset);
+	             listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
 	            layer.setItemHeight(0);
-	            itemOffset += layer.getItemHeight();
 	        });
 	    }
 
@@ -1045,11 +1065,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	    ITEMS_COUNT = 10000;
 
 	for (var i=0; i<ITEMS_COUNT; ++i){
-	    listData.push({
+	    listData.push(createItem(i));
+	}
+
+	function createItem(i){
+	    var item =  {
+	        onClick: function(){
+	            if (i != 0) {
+	                listData[0].tweetText = "Test";
+	            }
+
+	            item.tweetText = (item.tweetText + item.tweetText + item.tweetText);
+	            list.refresh();
+	        },
 	        header: 'Tweet number ' + (i + 1),
 	        minutesAgo: i % 20 + 1,
 	        tweetText: 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen'
-	    });
+	    }
+	    return item;
 	}
 
 	var pageNum = 0;
@@ -1071,7 +1104,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }, 2000);
 	    },
 
-	    useNativeScroller: false,
+	    useNativeScroller: true,
 
 	    recalculateItemHeights: true,
 
@@ -1082,19 +1115,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 	list.attach(document.getElementById('main'));
-
-	var index = 5;
-	setInterval(function(){
-	    var tweetText = 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen';
-
-	    listData[index++] = {
-	        header: 'Tweet number ' + (i + 1),
-	        minutesAgo: i % 20 + 1,
-	        tweetText: tweetText + tweetText + tweetText + tweetText
-	    };
-
-	    list.refresh();
-	}, 2000);
+	//
+	// var index = 5;
+	// setInterval(function(){
+	//     var tweetText = 'In computer displays, filmmaking, television production, and other kinetic displays, scrolling is sliding text, images or video across a monitor or display, vertically or horizontally. "Scrolling", as such, does not change the layout of the text or pictures, but moves (pans or tilts) the user\'s view across what is apparently a larger image that is not wholly seen';
+	//
+	//     listData[index++] = {
+	//         header: 'Tweet number ' + (i + 1),
+	//         minutesAgo: i % 20 + 1,
+	//         tweetText: tweetText + tweetText + tweetText + tweetText
+	//     };
+	//
+	//     list.refresh();
+	// }, 2000);
 
 
 
@@ -1104,7 +1137,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var template = React.createClass({displayName: "template",
 	    render: function(){
-	        return React.createElement("article", null, 
+	        return React.createElement("article", {onClick: this.props.onClick}, 
 	                React.createElement("div", {className: "title"}, 
 	                    React.createElement("div", {className: "title-image"}, 
 	                        React.createElement("img", {src: "../resources/bird.jpg", style: {width: '30px', height: '30px'}, className: "img"})

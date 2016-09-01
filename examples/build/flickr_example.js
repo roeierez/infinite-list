@@ -276,15 +276,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        parentElementHeight = parentElement.clientHeight;
 
+	        itemsRenderer.refresh();
 	        calculateHeights();
 	        if (scrollbarRenderer) {
 	            scrollbarRenderer.refresh();
 	        }
 
-	        itemsRenderer.refresh();
 	        if (initialPage) {
 	            scrollToItem(topListItemIndex, false, differenceFromTop);
 	        }
+
+	        needsRender=true;
 	    }
 
 	    function updateScroller() {
@@ -329,9 +331,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topItemOffset = null;
 
 
+
+	        var scrollerDiff = 0;
 	        renderedItems.forEach(function(item){
+	            if (item.getItemOffset() < topOffset) {
+	                scrollerDiff += (listItemsHeights[item.getItemIndex()] - item.getItemHeight());
+	            }
 	            listItemsHeights[item.getItemIndex()] = item.getItemHeight();
 	        });
+
+	        if (config.useNativeScroller && (scrollerDiff != 0)) {
+	            rootElement.scrollTop -= scrollerDiff;
+	            renderedItems.forEach(function(item){
+	                item.setItemOffset(item.getItemOffset() - scrollerDiff);
+	            });
+	        }
 
 	        var avarageItemHeight = 0,
 	            itemsCount = 0;
@@ -880,6 +894,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 
+	        //fix offsets.
+	        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
+	        renderedListItems.forEach(function(layer){
+	            if (layer.getItemOffset() != itemOffset) {
+	                layer.setItemOffset(itemOffset);
+	            }
+	            itemOffset += layer.getItemHeight();
+	        });
+
 	        return false;
 	    }
 
@@ -946,12 +969,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        visibleHeight = attachedElement.clientHeight;
 	        itemWidth = attachedElement.clientWidth;
 
-	        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
 	        renderedListItems.forEach(function(layer){
-	            listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
-	            layer.setItemOffset(itemOffset);
+	             listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
 	            layer.setItemHeight(0);
-	            itemOffset += layer.getItemHeight();
 	        });
 	    }
 

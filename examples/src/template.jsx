@@ -1,6 +1,6 @@
 var template = React.createClass({
     render: function(){
-        return <article>
+        return <article onClick={this.props.onClick}>
                 <div className="title">
                     <div className="title-image">
                         <img src="../resources/bird.jpg" style={{width: '30px', height: '30px'}} className="img"/>

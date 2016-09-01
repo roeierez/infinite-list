@@ -88,6 +88,15 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
             }
         }
 
+        //fix offsets.
+        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
+        renderedListItems.forEach(function(layer){
+            if (layer.getItemOffset() != itemOffset) {
+                layer.setItemOffset(itemOffset);
+            }
+            itemOffset += layer.getItemHeight();
+        });
+
         return false;
     }
 
@@ -154,12 +163,9 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         visibleHeight = attachedElement.clientHeight;
         itemWidth = attachedElement.clientWidth;
 
-        var itemOffset = renderedListItems[0] && renderedListItems[0].getItemOffset();
         renderedListItems.forEach(function(layer){
-            listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
-            layer.setItemOffset(itemOffset);
+             listConfig.itemRenderer(layer.getItemIndex(), layer.getDomElement());
             layer.setItemHeight(0);
-            itemOffset += layer.getItemHeight();
         });
     }
 

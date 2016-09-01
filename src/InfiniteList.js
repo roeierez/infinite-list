@@ -151,15 +151,17 @@ var InfiniteList = function (listConfig) {
 
         parentElementHeight = parentElement.clientHeight;
 
+        itemsRenderer.refresh();
         calculateHeights();
         if (scrollbarRenderer) {
             scrollbarRenderer.refresh();
         }
 
-        itemsRenderer.refresh();
         if (initialPage) {
             scrollToItem(topListItemIndex, false, differenceFromTop);
         }
+
+        needsRender = true;
     }
 
     function updateScroller() {
@@ -204,9 +206,21 @@ var InfiniteList = function (listConfig) {
         topItemOffset = null;
 
 
+
+        var scrollerDiff = 0;
         renderedItems.forEach(function(item){
+            if (item.getItemOffset() < topOffset) {
+                scrollerDiff += (listItemsHeights[item.getItemIndex()] - item.getItemHeight());
+            }
             listItemsHeights[item.getItemIndex()] = item.getItemHeight();
         });
+
+        if (config.useNativeScroller && (scrollerDiff != 0)) {
+            rootElement.scrollTop -= scrollerDiff;
+            renderedItems.forEach(function(item){
+                item.setItemOffset(item.getItemOffset() - scrollerDiff);
+            });
+        }
 
         var avarageItemHeight = 0,
             itemsCount = 0;
