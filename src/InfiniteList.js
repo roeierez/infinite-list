@@ -157,7 +157,7 @@ var InfiniteList = function (listConfig) {
             scrollbarRenderer.refresh();
         }
 
-        if (initialPage) {
+        if (initialPage && !config.useNativeScroller) {
             scrollToItem(topListItemIndex, false, differenceFromTop);
         }
 
