@@ -5,7 +5,7 @@ var VerticalScroller = require('./VerticalScroller'),
     ListItemsRenderer = require('./ListItemsRenderer'),
     StyleHelpers = require('./StyleHelpers');
     DEFAULT_ITEM_HEIGHT = 2,
-    RESIZE_CHECK_INTERVAL = 500;
+    RESIZE_CHECK_INTERVAL = 1000;
 
 var InfiniteList = function (listConfig) {
 
@@ -24,6 +24,7 @@ var InfiniteList = function (listConfig) {
         },
         parentElement = null,
         parentElementHeight,
+        parentElementWidth,
         rootElement = null,
         scrollElement = null,
         scrollbarRenderer = null,
@@ -88,11 +89,26 @@ var InfiniteList = function (listConfig) {
         parentElement.removeChild(rootElement);
     }
 
+    var lastResizeCheck = 0;
     function runAnimationLoop(){
         AnimationFrameHelper.startAnimationLoop(function(){
            if (needsRender) {
                 render();
             }
+            else {
+               var now = Date.now();
+               if (now - lastResizeCheck > RESIZE_CHECK_INTERVAL) {
+                   parentElementHeight = parentElement.clientHeight;
+                   lastResizeCheck = now;
+                   if (parentElementHeight != parentElement.clientHeight || parentElementWidth != parentElement.clientWidth) {
+                       topOffset = rootElement.scrollTop;
+                       refresh();
+                   } else  if (config.useNativeScroller && topOffset != rootElement.scrollTop) {
+                       topOffset = rootElement.scrollTop;
+                       render();
+                   }
+               }
+           }
         });
     }
 
@@ -150,6 +166,7 @@ var InfiniteList = function (listConfig) {
         }
 
         parentElementHeight = parentElement.clientHeight;
+        parentElementWidth = parentElement.clientWidth;
 
         itemsRenderer.refresh();
         calculateHeights();
@@ -199,7 +216,7 @@ var InfiniteList = function (listConfig) {
         if (!config.useNativeScroller) {
             StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
         }
-        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, numberOfRenderedItemsAhead);
+        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, listItemsHeights);
         renderedItems = itemsRenderer.getRenderedItems();
 
         scrollToIndex = null;

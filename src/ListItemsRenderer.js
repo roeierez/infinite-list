@@ -11,8 +11,9 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         renderedListItems = [],
         layersPool = new LayersPool();
 
-    function render(topOffset, atIndex, offsetFromTop, minNumberOfItemsAhead){
-        var startRenderTime = new Date().getTime();
+    function render(topOffset, atIndex, offsetFromTop, listItemsHeights){
+        var startRenderTime = new Date().getTime(),
+            minNumberOfItemsAhead = 2;
 
         if ( typeof atIndex == 'number' &&  atIndex >= 0){
             atIndex = Math.max(0, Math.min(atIndex, listConfig.itemsCount-1));
@@ -28,6 +29,29 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         //clean top items
         while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() < topOffset) {
             layersPool.addLayer(renderedListItems.shift());
+        }
+
+        if (renderedListItems.length == 1 && renderedListItems[0].getItemOffset() < topOffset ) {
+            var currentOffset = renderedListItems[0].getItemOffset() + renderedListItems[0].getItemHeight(),
+                itemIndex = renderedListItems[0].getItemIndex();
+            while (currentOffset < topOffset) {
+                ++itemIndex;
+                currentOffset += listItemsHeights[itemIndex];
+            }
+
+            if (renderedListItems[0].getItemIndex() != itemIndex) {
+                return render(currentOffset - listItemsHeights[itemIndex], itemIndex, 0, listItemsHeights);
+            }
+        } else if (renderedListItems[0].getItemOffset() > topOffset + visibleHeight ) {
+            var itemIndex = 0,
+                itemEndPosition = listItemsHeights[0];
+
+            while (itemEndPosition < topOffset) {
+                itemIndex++;
+                itemEndPosition += listItemsHeights[itemIndex];
+            }
+
+            return render(itemEndPosition - listItemsHeights[itemIndex], itemIndex, 0, listItemsHeights);
         }
 
         //fill up
