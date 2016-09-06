@@ -34,7 +34,6 @@ var InfiniteList = function (listConfig) {
         topOffset = 0,
         scrollToIndex = 0,
         topItemOffset = 0,
-        numberOfRenderedItemsAhead = 2,
         needsRender = true;
 
     for (var key in listConfig){
@@ -47,7 +46,6 @@ var InfiniteList = function (listConfig) {
     if (initialPageConfig){
         config.itemsCount = initialPageConfig.itemsCount || 0;
         config.hasMore = initialPageConfig.hasMore || false;
-        //numberOfRenderedItemsAhead = initialPageConfig.itemsCount || 1;
     }
 
     function attach(domElement, touchProvider){
@@ -152,8 +150,6 @@ var InfiniteList = function (listConfig) {
                     topListItemIndex = 0;
                     rootElement.scrollTop = 0;
                     differenceFromTop = 0;
-                } else if (config.itemsCount < initialPage.itemsCount) {
-                    //numberOfRenderedItemsAhead = initialPage.itemsCount - config.itemsCount;
                 }
 
                 config.itemsCount = initialPage.itemsCount;
@@ -263,9 +259,6 @@ var InfiniteList = function (listConfig) {
         config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
             config.hasMore = hasMore;
             config.itemsCount += pageItemsCount;
-            if (config.useNativeScroller) {
-                //numberOfRenderedItemsAhead = pageItemsCount;
-            }
             calculateHeights(config.itemsCount - pageItemsCount);
             scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
             //scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems()[0].getItemOffset()]);
