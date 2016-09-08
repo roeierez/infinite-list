@@ -131,7 +131,8 @@ var InfiniteList = function (listConfig) {
             position: 'relative',
             height: '100%',
             width: '100%',
-            overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
+            overflowY : config.useNativeScroller ? 'scroll' : 'hidden',
+            "-webkit-overflow-scrolling": "touch"
         });
         rootElement.appendChild(scrollElement);
         parentElement.appendChild(

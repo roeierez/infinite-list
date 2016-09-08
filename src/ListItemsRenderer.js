@@ -27,7 +27,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
 
         //clean top items
-        while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() < topOffset) {
+        while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() + renderedListItems[0].getItemHeight() < topOffset) {
             layersPool.addLayer(renderedListItems.shift());
         }
 
