@@ -141,6 +141,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
 	            },
 	            hasMore: false,
+	            pullToRefresh: {
+	                height: null,
+	                renderer: null
+	            },
 	            itemsCount: 0
 	        },
 	        parentElement = null,
@@ -156,7 +160,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topItemOffset = 0,
 	        needsRender = true;
 
-	    for (key in listConfig){
+	    for (var key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
 	            config[key] = listConfig[key];
 	        }
@@ -718,7 +722,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var visibleHeight = attachedElement.clientHeight,
 	        itemWidth = attachedElement.clientWidth,
 	        renderedListItems = [],
-	        layersPool = new LayersPool();
+	        layersPool = new LayersPool(),
+	        pullToRefreshItem = null;
+
+	    listConfig.pullToRefresh && renderPullToRefresh();
 
 	    function render(topOffset, atIndex, offsetFromTop){
 	        var startRenderTime = new Date().getTime();
@@ -743,6 +750,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                return true;
 	            }
 	        }
+
+	        if (topRenderedItem.getItemIndex() == 0) {
+	            renderPullToRefresh(topOffset, topRenderedItem.getItemOffset());
+	            //pullToRefreshItem.setItemOffset(topRenderedItem.getItemOffset() - 50);
+	        }
+
 
 	        if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
 	            var bottomIndex = bottomRenderedItem.getItemIndex();
@@ -804,6 +817,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	            layer = borrowLayerForIndex(index, itemIdentifier, height);
 	        listConfig.itemRenderer(index, layer.getDomElement());
 	        return layer;
+	    }
+
+	    function renderPullToRefresh(topOffset, topItemStart) {
+
+	        if (listConfig.pullToRefresh && listConfig.pullToRefresh.height && listConfig.pullToRefresh.renderer) {
+	            if (!pullToRefreshItem) {
+	                var pullToRefreshIdenitifier = "$pullToRefresh$";
+	                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, listConfig.pullToRefresh.height);
+	            }
+
+	            if (topOffset < topItemStart) {
+	                listConfig.pullToRefresh.renderer(pullToRefreshItem.getDomElement(), topItemStart - topOffset );
+	                pullToRefreshItem.setItemOffset(topItemStart - listConfig.pullToRefresh.height);
+	            }
+	        }
 	    }
 
 	    /*

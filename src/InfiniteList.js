@@ -16,6 +16,10 @@ var InfiniteList = function (listConfig) {
                 domElement.innerHTML = '<div style="margin-left:14px;height:50px">Loading...</div>';
             },
             hasMore: false,
+            pullToRefresh: {
+                height: null,
+                renderer: null
+            },
             itemsCount: 0
         },
         parentElement = null,
@@ -31,7 +35,7 @@ var InfiniteList = function (listConfig) {
         topItemOffset = 0,
         needsRender = true;
 
-    for (key in listConfig){
+    for (var key in listConfig){
         if (listConfig.hasOwnProperty(key)){
             config[key] = listConfig[key];
         }

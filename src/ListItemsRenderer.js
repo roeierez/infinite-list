@@ -9,7 +9,10 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
     var visibleHeight = attachedElement.clientHeight,
         itemWidth = attachedElement.clientWidth,
         renderedListItems = [],
-        layersPool = new LayersPool();
+        layersPool = new LayersPool(),
+        pullToRefreshItem = null;
+
+    listConfig.pullToRefresh && renderPullToRefresh();
 
     function render(topOffset, atIndex, offsetFromTop){
         var startRenderTime = new Date().getTime();
@@ -34,6 +37,12 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
                 return true;
             }
         }
+
+        if (topRenderedItem.getItemIndex() == 0) {
+            renderPullToRefresh(topOffset, topRenderedItem.getItemOffset());
+            //pullToRefreshItem.setItemOffset(topRenderedItem.getItemOffset() - 50);
+        }
+
 
         if (bottomRenderedItem.getItemIndex() < listConfig.itemsCount && bottomRenderedItem.getIdentifier() == "$LoadMore") {
             var bottomIndex = bottomRenderedItem.getItemIndex();
@@ -95,6 +104,21 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
             layer = borrowLayerForIndex(index, itemIdentifier, height);
         listConfig.itemRenderer(index, layer.getDomElement());
         return layer;
+    }
+
+    function renderPullToRefresh(topOffset, topItemStart) {
+
+        if (listConfig.pullToRefresh && listConfig.pullToRefresh.height && listConfig.pullToRefresh.renderer) {
+            if (!pullToRefreshItem) {
+                var pullToRefreshIdenitifier = "$pullToRefresh$";
+                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, listConfig.pullToRefresh.height);
+            }
+
+            if (topOffset < topItemStart) {
+                listConfig.pullToRefresh.renderer(pullToRefreshItem.getDomElement(), topItemStart - topOffset );
+                pullToRefreshItem.setItemOffset(topItemStart - listConfig.pullToRefresh.height);
+            }
+        }
     }
 
     /*
