@@ -5,7 +5,8 @@ module.exports = {
         recycling: ['./src/recycling.js'],
         paging: ['./src/paging.js'],
         react: ['./src/react.js'],
-        flickr: ['./src/flickr.js']
+        flickr: ['./src/flickr.js'],
+        pullToRefresh: ['./src/pullToRefresh.js']
     },
     output: {
         path: './build',
