@@ -1,4 +1,5 @@
 var InfiniteList = require('../../src/InfiniteList'),
+    refreshing = false,
     list = new InfiniteList({
         itemHeightGetter: function () {
             return 50;
@@ -9,15 +10,17 @@ var InfiniteList = require('../../src/InfiniteList'),
         },
 
         pullToRefresh: {
-            height: 50,
-            renderer: function (domElement, offsetFromTop) {
-                if (offsetFromTop < 60) {
-                    //still not loading
-                    domElement.innerHTML = '<div style="height: 1px; padding-top: 20px; text-align: center">Pull To Refresh</div>';
-                } else {
-                    //now loading
-                    domElement.innerHTML = '<div style="height: 1px; padding-top: 20px; text-align: center">Refreshing...</div>';
-                }
+            height: 30,
+            stayInView: true, //whether to stay in view like iOS style or move away like Android style.
+            beginRefreshAtOffset: 100, //indicates when to switch to busy view, the default is "height" argument
+            idleRenderer: function (domElement, offsetFromTop, stayInView, leaveView) {
+                domElement.innerHTML = '<div style="height: 1px; padding-top: 10px; text-align: center">Pull To Refresh</div>';
+            },
+            busyRenderer: function (domElement, offsetFromTop, stayInView, leaveView) {
+                domElement.innerHTML = '<div style="height: 1px; padding-top: 10px; text-align: center">Refreshing...</div>';
+            },
+            onRefresh: function(endRefreshCallback){
+                setTimeout(endRefreshCallback, 2000);
             }
         },
 

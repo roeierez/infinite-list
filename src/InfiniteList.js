@@ -18,7 +18,10 @@ var InfiniteList = function (listConfig) {
             hasMore: false,
             pullToRefresh: {
                 height: null,
-                renderer: null
+                idleRenderer: null,
+                busyRenderer: null,
+                beginRefreshAtOffset: null,
+                onRefresh: null
             },
             itemsCount: 0
         },

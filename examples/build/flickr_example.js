@@ -143,7 +143,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            hasMore: false,
 	            pullToRefresh: {
 	                height: null,
-	                renderer: null
+	                idleRenderer: null,
+	                busyRenderer: null,
+	                beginRefreshAtOffset: null,
+	                onRefresh: null
 	            },
 	            itemsCount: 0
 	        },
@@ -713,6 +716,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var Layer = __webpack_require__(8),
 	    LayersPool = __webpack_require__(9),
+	    StyleHelpers = __webpack_require__(5),
 	    AnimationFrameHelper = __webpack_require__(6),
 	    MIN_FPS = 30,
 	    MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
@@ -723,7 +727,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        itemWidth = attachedElement.clientWidth,
 	        renderedListItems = [],
 	        layersPool = new LayersPool(),
-	        pullToRefreshItem = null;
+	        pullToRefreshItem = null,
+	        refreshing = false;
 
 	    listConfig.pullToRefresh && renderPullToRefresh();
 
@@ -821,17 +826,49 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function renderPullToRefresh(topOffset, topItemStart) {
 
-	        if (listConfig.pullToRefresh && listConfig.pullToRefresh.height && listConfig.pullToRefresh.renderer) {
+	        if (!refreshing && listConfig.pullToRefresh && listConfig.pullToRefresh.height) {
+	            var pullToRefresh = listConfig.pullToRefresh,
+	                height = pullToRefresh.height,
+	                idleRenderer = pullToRefresh.idleRenderer,
+	                busyRenderer = pullToRefresh.busyRenderer,
+	                beginRefreshAtOffset = pullToRefresh.beginRefreshAtOffset,
+	                onRefresh = pullToRefresh.onRefresh;
+
 	            if (!pullToRefreshItem) {
 	                var pullToRefreshIdenitifier = "$pullToRefresh$";
-	                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, listConfig.pullToRefresh.height);
+	                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, height);
 	            }
 
 	            if (topOffset < topItemStart) {
-	                listConfig.pullToRefresh.renderer(pullToRefreshItem.getDomElement(), topItemStart - topOffset );
-	                pullToRefreshItem.setItemOffset(topItemStart - listConfig.pullToRefresh.height);
+	                var diff = topItemStart - topOffset;
+	                if (diff < (beginRefreshAtOffset || height)) {
+	                    idleRenderer(pullToRefreshItem.getDomElement());
+	                } else {
+	                    busyRenderer(pullToRefreshItem.getDomElement());
+	                    startRefresh(height);
+	                    onRefresh(endRefresh);
+	                }
+	                pullToRefreshItem.setItemOffset(topItemStart - height);
 	            }
 	        }
+	    }
+
+	    function startRefresh(height) {
+	        refreshing = true;
+	        if (listConfig.pullToRefresh.stayInView) {
+	            StyleHelpers.applyElementStyle(scrollElement, {
+	                top: height + "px",
+	                transition: "top 1s"
+	            });
+	        }
+	    }
+
+	    function endRefresh() {
+	        refreshing = false;
+	        StyleHelpers.applyElementStyle(scrollElement, {
+	            transition: "top 1s",
+	            top: 0
+	        });
 	    }
 
 	    /*

@@ -1,5 +1,6 @@
 var Layer = require('./Layer'),
     LayersPool = require('./layerPool'),
+    StyleHelpers = require('./StyleHelpers'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     MIN_FPS = 30,
     MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
@@ -10,7 +11,8 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         itemWidth = attachedElement.clientWidth,
         renderedListItems = [],
         layersPool = new LayersPool(),
-        pullToRefreshItem = null;
+        pullToRefreshItem = null,
+        refreshing = false;
 
     listConfig.pullToRefresh && renderPullToRefresh();
 
@@ -108,17 +110,49 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
 
     function renderPullToRefresh(topOffset, topItemStart) {
 
-        if (listConfig.pullToRefresh && listConfig.pullToRefresh.height && listConfig.pullToRefresh.renderer) {
+        if (!refreshing && listConfig.pullToRefresh && listConfig.pullToRefresh.height) {
+            var pullToRefresh = listConfig.pullToRefresh,
+                height = pullToRefresh.height,
+                idleRenderer = pullToRefresh.idleRenderer,
+                busyRenderer = pullToRefresh.busyRenderer,
+                beginRefreshAtOffset = pullToRefresh.beginRefreshAtOffset,
+                onRefresh = pullToRefresh.onRefresh;
+
             if (!pullToRefreshItem) {
                 var pullToRefreshIdenitifier = "$pullToRefresh$";
-                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, listConfig.pullToRefresh.height);
+                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, height);
             }
 
             if (topOffset < topItemStart) {
-                listConfig.pullToRefresh.renderer(pullToRefreshItem.getDomElement(), topItemStart - topOffset );
-                pullToRefreshItem.setItemOffset(topItemStart - listConfig.pullToRefresh.height);
+                var diff = topItemStart - topOffset;
+                if (diff < (beginRefreshAtOffset || height)) {
+                    idleRenderer(pullToRefreshItem.getDomElement());
+                } else {
+                    busyRenderer(pullToRefreshItem.getDomElement());
+                    startRefresh(height);
+                    onRefresh(endRefresh);
+                }
+                pullToRefreshItem.setItemOffset(topItemStart - height);
             }
         }
+    }
+
+    function startRefresh(height) {
+        refreshing = true;
+        if (listConfig.pullToRefresh.stayInView) {
+            StyleHelpers.applyElementStyle(scrollElement, {
+                top: height + "px",
+                transition: "top 1s"
+            });
+        }
+    }
+
+    function endRefresh() {
+        refreshing = false;
+        StyleHelpers.applyElementStyle(scrollElement, {
+            transition: "top 1s",
+            top: 0
+        });
     }
 
     /*
