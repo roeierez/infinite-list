@@ -212,13 +212,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
 	        }
 
-	        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	        scroller.setDimensions(minScrollerOffset-50, maxScrollerOffset);
+	    }
+
+	    function renderPullToRefresh() {
+	        var pullToRefresh = config.pullToRefresh,
+	            height = pullToRefresh.height,
+	            idleRenderer = pullToRefresh.idleRenderer,
+	            busyRenderer = pullToRefresh.busyRenderer,
+	            beginRefreshAtOffset = pullToRefresh.beginRefreshAtOffset,
+	            onRefresh = pullToRefresh.onRefresh;
+
+	        console.error('topOffset = ' + topOffset);
+	        if (topOffset < -50) {
+
+	        }
 	    }
 
 	    function render() {
 	        var renderedItems;
-
 	        updateScroller();
+	       // renderPullToRefresh();
 	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
 	        renderedItems = itemsRenderer.getRenderedItems();
@@ -390,7 +404,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function bounce (top){
 
-	        var finalDestination = top ? minOffset : maxOffset,
+	        var finalDestination = top ? minOffset - 50 : maxOffset,
 	            isBouncingBack = top && amplitude > 0 || !top && amplitude < 0;
 
 	        if (amplitude == 0){
@@ -783,8 +797,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    idleRenderer(pullToRefreshItem.getDomElement());
 	                } else {
 	                    busyRenderer(pullToRefreshItem.getDomElement());
-	                    startRefresh(height);
-	                    onRefresh(endRefresh);
+	                    //startRefresh(height);
+	                    //onRefresh(endRefresh);
 	                }
 	                pullToRefreshItem.setItemOffset(topItemStart - height);
 	            }

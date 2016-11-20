@@ -36,7 +36,8 @@ var InfiniteList = function (listConfig) {
         topOffset = 0,
         scrollToIndex = 0,
         topItemOffset = 0,
-        needsRender = true;
+        needsRender = true,
+        refreshing = false;
 
     for (var key in listConfig){
         if (listConfig.hasOwnProperty(key)){
@@ -54,7 +55,14 @@ var InfiniteList = function (listConfig) {
         parentElement = domElement;
         initializeRootElement(domElement);
         scrollbarRenderer = new ScrollbarRenderer(rootElement);
-        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
+        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback, function(){
+            refreshing = true;
+        }, function(){
+            console.error('done refreshing');
+            refreshing = false;
+
+            updateScroller(true);
+        });
         scroller = new VerticalScroller(
             parentElement,
             function (top) {
@@ -134,12 +142,13 @@ var InfiniteList = function (listConfig) {
         scrollToItem(topListItemIndex, false, differenceFromTop);
     }
 
-    function updateScroller() {
+    function updateScroller(align) {
         var maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
             renderedItems = itemsRenderer.getRenderedItems(),
             lastRenderedItem = renderedItems[renderedItems.length - 1],
             minScrollerOffset =  Number.MIN_SAFE_INTEGER,
-            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
+            maxScrollerOffset = Number.MAX_SAFE_INTEGER,
+            pullToRefreshStartAt = config.pullToRefresh.beginRefreshAtOffset;
 
         if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
                 minScrollerOffset = renderedItems[0].getItemOffset();
@@ -149,12 +158,16 @@ var InfiniteList = function (listConfig) {
                 maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
         }
 
+        minScrollerOffset = refreshing ? minScrollerOffset - pullToRefreshStartAt : minScrollerOffset;
+        maxScrollerOffset = refreshing ? maxScrollerOffset + pullToRefreshStartAt : maxScrollerOffset;
         scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+        if (align && minScrollerOffset > topOffset) {
+            scroller.scrollTo(minScrollerOffset, true);
+        }
     }
 
     function render() {
         var renderedItems;
-
         updateScroller();
         StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
         needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);

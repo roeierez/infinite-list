@@ -100,7 +100,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topOffset = 0,
 	        scrollToIndex = 0,
 	        topItemOffset = 0,
-	        needsRender = true;
+	        needsRender = true,
+	        refreshing = false;
 
 	    for (var key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
@@ -118,7 +119,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        parentElement = domElement;
 	        initializeRootElement(domElement);
 	        scrollbarRenderer = new ScrollbarRenderer(rootElement);
-	        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback);
+	        itemsRenderer = new ListItemsRenderer(domElement, scrollElement, config, loadMoreCallback, function(){
+	            refreshing = true;
+	        }, function(){
+	            console.error('done refreshing');
+	            refreshing = false;
+
+	            updateScroller(true);
+	        });
 	        scroller = new VerticalScroller(
 	            parentElement,
 	            function (top) {
@@ -198,12 +206,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scrollToItem(topListItemIndex, false, differenceFromTop);
 	    }
 
-	    function updateScroller() {
+	    function updateScroller(align) {
 	        var maxIndexToRender = config.itemsCount - 1 + (config.hasMore ? 1 : 0),
 	            renderedItems = itemsRenderer.getRenderedItems(),
 	            lastRenderedItem = renderedItems[renderedItems.length - 1],
 	            minScrollerOffset =  Number.MIN_SAFE_INTEGER,
-	            maxScrollerOffset = Number.MAX_SAFE_INTEGER;
+	            maxScrollerOffset = Number.MAX_SAFE_INTEGER,
+	            pullToRefreshStartAt = config.pullToRefresh.beginRefreshAtOffset;
 
 	        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
 	                minScrollerOffset = renderedItems[0].getItemOffset();
@@ -213,12 +222,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
 	        }
 
+	        minScrollerOffset = refreshing ? minScrollerOffset - pullToRefreshStartAt : minScrollerOffset;
+	        maxScrollerOffset = refreshing ? maxScrollerOffset + pullToRefreshStartAt : maxScrollerOffset;
 	        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
+	        if (align && minScrollerOffset > topOffset) {
+	            scroller.scrollTo(minScrollerOffset, true);
+	        }
 	    }
 
 	    function render() {
 	        var renderedItems;
-
 	        updateScroller();
 	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
@@ -660,7 +673,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    MIN_FPS = 30,
 	    MAX_TIME_PER_FRAME = 1000 / MIN_FPS;
 
-	var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pageCallback){
+	var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pageCallback, onRefreshStarted, onRefreshCompleted){
 
 	    var visibleHeight = attachedElement.clientHeight,
 	        itemWidth = attachedElement.clientWidth,
@@ -765,7 +778,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    function renderPullToRefresh(topOffset, topItemStart) {
 
-	        if (!refreshing && listConfig.pullToRefresh && listConfig.pullToRefresh.height) {
+	        if (listConfig.pullToRefresh && listConfig.pullToRefresh.height) {
 	            var pullToRefresh = listConfig.pullToRefresh,
 	                height = pullToRefresh.height,
 	                idleRenderer = pullToRefresh.idleRenderer,
@@ -773,42 +786,46 @@ return /******/ (function(modules) { // webpackBootstrap
 	                beginRefreshAtOffset = pullToRefresh.beginRefreshAtOffset,
 	                onRefresh = pullToRefresh.onRefresh;
 
-	            if (!pullToRefreshItem) {
-	                var pullToRefreshIdenitifier = "$pullToRefresh$";
-	                pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, height);
-	            }
-
 	            if (topOffset < topItemStart) {
-	                var diff = topItemStart - topOffset;
-	                if (diff < (beginRefreshAtOffset || height)) {
+	                if (!pullToRefreshItem) {
+	                    var pullToRefreshIdenitifier = "$pullToRefresh$";
+	                    pullToRefreshItem = borrowLayerForIndex(-1, pullToRefreshIdenitifier, height);
 	                    idleRenderer(pullToRefreshItem.getDomElement());
-	                } else {
+	                }
+
+	                var diff = topItemStart - topOffset;
+	                if (!refreshing && diff >= (beginRefreshAtOffset || height)) {
+	                    refreshing = true;
 	                    busyRenderer(pullToRefreshItem.getDomElement());
-	                    startRefresh(height);
-	                    onRefresh(endRefresh);
+	                    onRefreshStarted(height);
+	                    onRefresh(function(){
+	                        refreshing = false;
+	                        idleRenderer(pullToRefreshItem.getDomElement());
+	                        onRefreshCompleted();
+	                    });
 	                }
 	                pullToRefreshItem.setItemOffset(topItemStart - height);
 	            }
 	        }
 	    }
 
-	    function startRefresh(height) {
-	        refreshing = true;
-	        if (listConfig.pullToRefresh.stayInView) {
-	            StyleHelpers.applyElementStyle(scrollElement, {
-	                top: height + "px",
-	                transition: "top 1s"
-	            });
-	        }
-	    }
-
-	    function endRefresh() {
-	        refreshing = false;
-	        StyleHelpers.applyElementStyle(scrollElement, {
-	            transition: "top 1s",
-	            top: 0
-	        });
-	    }
+	    // function startRefresh(height) {
+	    //     refreshing = true;
+	    //     if (listConfig.pullToRefresh.stayInView) {
+	    //         StyleHelpers.applyElementStyle(scrollElement, {
+	    //             top: height + "px",
+	    //             transition: "top 1s"
+	    //         });
+	    //     }
+	    // }
+	    //
+	    // function endRefresh() {
+	    //     refreshing = false;
+	    //     StyleHelpers.applyElementStyle(scrollElement, {
+	    //         transition: "top 1s",
+	    //         top: 0
+	    //     });
+	    // }
 
 	    /*
 	     Borrow a layer from the LayersPool and attach it to a certain item at index.
@@ -1006,10 +1023,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            height: 30,
 	            stayInView: true, //whether to stay in view like iOS style or move away like Android style.
 	            beginRefreshAtOffset: 100, //indicates when to switch to busy view, the default is "height" argument
-	            idleRenderer: function (domElement, offsetFromTop, stayInView, leaveView) {
-	                domElement.innerHTML = '<div style="height: 1px; padding-top: 10px; text-align: center">Pull To Refresh</div>';
+	            idleRenderer: function (domElement) {
+	                domElement.innerHTML = '<div style="border: 1px solid black; height: 1px; padding-top: 10px; text-align: center">Pull To Refresh</div>';
 	            },
-	            busyRenderer: function (domElement, offsetFromTop, stayInView, leaveView) {
+	            busyRenderer: function (domElement) {
 	                domElement.innerHTML = '<div style="height: 1px; padding-top: 10px; text-align: center">Refreshing...</div>';
 	            },
 	            onRefresh: function(endRefreshCallback){

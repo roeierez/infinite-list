@@ -13,10 +13,10 @@ var InfiniteList = require('../../src/InfiniteList'),
             height: 30,
             stayInView: true, //whether to stay in view like iOS style or move away like Android style.
             beginRefreshAtOffset: 100, //indicates when to switch to busy view, the default is "height" argument
-            idleRenderer: function (domElement, offsetFromTop, stayInView, leaveView) {
-                domElement.innerHTML = '<div style="height: 1px; padding-top: 10px; text-align: center">Pull To Refresh</div>';
+            idleRenderer: function (domElement) {
+                domElement.innerHTML = '<div style="border: 1px solid black; height: 1px; padding-top: 10px; text-align: center">Pull To Refresh</div>';
             },
-            busyRenderer: function (domElement, offsetFromTop, stayInView, leaveView) {
+            busyRenderer: function (domElement) {
                 domElement.innerHTML = '<div style="height: 1px; padding-top: 10px; text-align: center">Refreshing...</div>';
             },
             onRefresh: function(endRefreshCallback){
