@@ -170,7 +170,7 @@ var InfiniteList = function (listConfig) {
         var renderedItems;
         updateScroller();
         StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
-        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, scroller.isPressed && scroller.isPressed());
         renderedItems = itemsRenderer.getRenderedItems();
 
         scrollToIndex = null;

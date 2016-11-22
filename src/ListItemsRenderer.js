@@ -12,11 +12,12 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         renderedListItems = [],
         layersPool = new LayersPool(),
         pullToRefreshItem = null,
-        refreshing = false;
+        refreshing = false,
+        prepareToRefresh = false;
 
     listConfig.pullToRefresh && renderPullToRefresh();
 
-    function render(topOffset, atIndex, offsetFromTop){
+    function render(topOffset, atIndex, offsetFromTop, isDragging){
         var startRenderTime = new Date().getTime();
 
         if ( typeof atIndex == 'number' &&  atIndex >= 0){
@@ -41,7 +42,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         }
 
         if (topRenderedItem.getItemIndex() == 0) {
-            renderPullToRefresh(topOffset, topRenderedItem.getItemOffset());
+            renderPullToRefresh(topOffset, topRenderedItem.getItemOffset(), isDragging);
             //pullToRefreshItem.setItemOffset(topRenderedItem.getItemOffset() - 50);
         }
 
@@ -108,7 +109,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         return layer;
     }
 
-    function renderPullToRefresh(topOffset, topItemStart) {
+    function renderPullToRefresh(topOffset, topItemStart, isDragging) {
 
         if (listConfig.pullToRefresh && listConfig.pullToRefresh.height) {
             var pullToRefresh = listConfig.pullToRefresh,
@@ -126,16 +127,25 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
                 }
 
                 var diff = topItemStart - topOffset;
-                if (!refreshing && diff >= (beginRefreshAtOffset || height)) {
-                    refreshing = true;
+
+                if (diff >= (beginRefreshAtOffset || height) && (isDragging || prepareToRefresh) || refreshing) {
                     busyRenderer(pullToRefreshItem.getDomElement());
+                } else {
+                    idleRenderer(pullToRefreshItem.getDomElement());
+                }
+
+                if (!refreshing && diff >= (beginRefreshAtOffset || height) && !isDragging && prepareToRefresh) {
+                    refreshing = true;
+                    // busyRenderer(pullToRefreshItem.getDomElement());
                     onRefreshStarted(height);
                     onRefresh(function(){
                         refreshing = false;
-                        idleRenderer(pullToRefreshItem.getDomElement());
+                        //idleRenderer(pullToRefreshItem.getDomElement());
                         onRefreshCompleted();
                     });
                 }
+
+                prepareToRefresh = isDragging;
                 pullToRefreshItem.setItemOffset(topItemStart - height);
             }
         }

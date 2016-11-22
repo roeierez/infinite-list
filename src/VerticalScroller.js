@@ -203,7 +203,10 @@ var VerticalScroller = function (parentElement, callback) {
 
     return {
         setDimensions: setDimensions,
-        scrollTo: scrollTo
+        scrollTo: scrollTo,
+        isPressed: function(){
+            return pressed;
+        }
     }
 };
 

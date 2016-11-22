@@ -234,7 +234,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var renderedItems;
 	        updateScroller();
 	        StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
-	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset);
+	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, scroller.isPressed && scroller.isPressed());
 	        renderedItems = itemsRenderer.getRenderedItems();
 
 	        scrollToIndex = null;
@@ -537,7 +537,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return {
 	        setDimensions: setDimensions,
-	        scrollTo: scrollTo
+	        scrollTo: scrollTo,
+	        isPressed: function(){
+	            return pressed;
+	        }
 	    }
 	};
 
@@ -680,11 +683,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        renderedListItems = [],
 	        layersPool = new LayersPool(),
 	        pullToRefreshItem = null,
-	        refreshing = false;
+	        refreshing = false,
+	        prepareToRefresh = false;
 
 	    listConfig.pullToRefresh && renderPullToRefresh();
 
-	    function render(topOffset, atIndex, offsetFromTop){
+	    function render(topOffset, atIndex, offsetFromTop, isDragging){
 	        var startRenderTime = new Date().getTime();
 
 	        if ( typeof atIndex == 'number' &&  atIndex >= 0){
@@ -709,7 +713,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        if (topRenderedItem.getItemIndex() == 0) {
-	            renderPullToRefresh(topOffset, topRenderedItem.getItemOffset());
+	            renderPullToRefresh(topOffset, topRenderedItem.getItemOffset(), isDragging);
 	            //pullToRefreshItem.setItemOffset(topRenderedItem.getItemOffset() - 50);
 	        }
 
@@ -776,7 +780,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return layer;
 	    }
 
-	    function renderPullToRefresh(topOffset, topItemStart) {
+	    function renderPullToRefresh(topOffset, topItemStart, isDragging) {
 
 	        if (listConfig.pullToRefresh && listConfig.pullToRefresh.height) {
 	            var pullToRefresh = listConfig.pullToRefresh,
@@ -794,16 +798,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 
 	                var diff = topItemStart - topOffset;
-	                if (!refreshing && diff >= (beginRefreshAtOffset || height)) {
-	                    refreshing = true;
+
+	                if (diff >= (beginRefreshAtOffset || height) && (isDragging || prepareToRefresh) || refreshing) {
 	                    busyRenderer(pullToRefreshItem.getDomElement());
+	                } else {
+	                    idleRenderer(pullToRefreshItem.getDomElement());
+	                }
+
+	                if (!refreshing && diff >= (beginRefreshAtOffset || height) && !isDragging && prepareToRefresh) {
+	                    refreshing = true;
+	                    // busyRenderer(pullToRefreshItem.getDomElement());
 	                    onRefreshStarted(height);
 	                    onRefresh(function(){
 	                        refreshing = false;
-	                        idleRenderer(pullToRefreshItem.getDomElement());
+	                        //idleRenderer(pullToRefreshItem.getDomElement());
 	                        onRefreshCompleted();
 	                    });
 	                }
+
+	                prepareToRefresh = isDragging;
 	                pullToRefreshItem.setItemOffset(topItemStart - height);
 	            }
 	        }
