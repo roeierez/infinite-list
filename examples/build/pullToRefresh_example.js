@@ -212,7 +212,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            lastRenderedItem = renderedItems[renderedItems.length - 1],
 	            minScrollerOffset =  Number.MIN_SAFE_INTEGER,
 	            maxScrollerOffset = Number.MAX_SAFE_INTEGER,
-	            pullToRefreshStartAt = config.pullToRefresh.beginRefreshAtOffset;
+	            pullToRefreshHeight = config.pullToRefresh.height;
 
 	        if (renderedItems.length > 0 && renderedItems[0].getItemIndex() == 0) {
 	                minScrollerOffset = renderedItems[0].getItemOffset();
@@ -222,8 +222,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                maxScrollerOffset =  lastRenderedItem.getItemOffset() + lastRenderedItem.getItemHeight() - parentElementHeight;
 	        }
 
-	        minScrollerOffset = refreshing ? minScrollerOffset - pullToRefreshStartAt : minScrollerOffset;
-	        maxScrollerOffset = refreshing ? maxScrollerOffset + pullToRefreshStartAt : maxScrollerOffset;
+	        minScrollerOffset = refreshing ? minScrollerOffset - pullToRefreshHeight : minScrollerOffset;
 	        scroller.setDimensions(minScrollerOffset, maxScrollerOffset);
 	        if (align && minScrollerOffset > topOffset) {
 	            scroller.scrollTo(minScrollerOffset, true);
@@ -1035,7 +1034,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        pullToRefresh: {
 	            height: 30,
 	            stayInView: true, //whether to stay in view like iOS style or move away like Android style.
-	            beginRefreshAtOffset: 100, //indicates when to switch to busy view, the default is "height" argument
+	            beginRefreshAtOffset: 50, //indicates when to switch to busy view, the default is "height" argument
 	            idleRenderer: function (domElement) {
 	                domElement.innerHTML = '<div style="border: 1px solid black; height: 1px; padding-top: 10px; text-align: center">Pull To Refresh</div>';
 	            },
