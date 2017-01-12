@@ -2,7 +2,7 @@ var VerticalScroller = require('./VerticalScroller'),
     ScrollbarRenderer = require('./ScrollbarRenderer'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     ListItemsRenderer = require('./ListItemsRenderer'),
-    StyleHelpers = require('./StyleHelpers');
+    StyleHelpers = require('./StyleHelpers'),
     DEFAULT_ITEM_HEIGHT = 2;
 
 var InfiniteList = function (listConfig) {
