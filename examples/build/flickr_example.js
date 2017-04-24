@@ -124,13 +124,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var VerticalScroller = __webpack_require__(3),
-	    NativeScroller = __webpack_require__(4)
+	    NativeScroller = __webpack_require__(4),
 	    ScrollbarRenderer = __webpack_require__(6),
 	    AnimationFrameHelper = __webpack_require__(7),
 	    ListItemsRenderer = __webpack_require__(8),
-	    StyleHelpers = __webpack_require__(5);
+	    StyleHelpers = __webpack_require__(5),
 	    DEFAULT_ITEM_HEIGHT = 2,
-	    RESIZE_CHECK_INTERVAL = 500;
+	    RESIZE_CHECK_INTERVAL = 1000;
 
 	var InfiniteList = function (listConfig) {
 
@@ -149,6 +149,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        },
 	        parentElement = null,
 	        parentElementHeight,
+	        parentElementWidth,
 	        rootElement = null,
 	        scrollElement = null,
 	        scrollbarRenderer = null,
@@ -158,10 +159,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        topOffset = 0,
 	        scrollToIndex = 0,
 	        topItemOffset = 0,
-	        numberOfRenderedItemsAhead = 2,
 	        needsRender = true;
 
-	    for (key in listConfig){
+	    for (var key in listConfig){
 	        if (listConfig.hasOwnProperty(key)){
 	            config[key] = listConfig[key];
 	        }
@@ -171,7 +171,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (initialPageConfig){
 	        config.itemsCount = initialPageConfig.itemsCount || 0;
 	        config.hasMore = initialPageConfig.hasMore || false;
-	        //numberOfRenderedItemsAhead = initialPageConfig.itemsCount || 1;
 	    }
 
 	    function attach(domElement, touchProvider){
@@ -213,11 +212,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	        parentElement.removeChild(rootElement);
 	    }
 
+	    var lastResizeCheck = 0;
 	    function runAnimationLoop(){
 	        AnimationFrameHelper.startAnimationLoop(function(){
 	           if (needsRender) {
 	                render();
 	            }
+	            else {
+	               var now = Date.now();
+	               if (now - lastResizeCheck > RESIZE_CHECK_INTERVAL) {
+	                   parentElementHeight = parentElement.clientHeight;
+	                   lastResizeCheck = now;
+	                   if (parentElementHeight != parentElement.clientHeight || parentElementWidth != parentElement.clientWidth) {
+	                       topOffset = rootElement.scrollTop;
+	                       refresh();
+	                   } else  if (config.useNativeScroller && topOffset != rootElement.scrollTop) {
+	                       topOffset = rootElement.scrollTop;
+	                       render();
+	                   }
+	               }
+	           }
 	        });
 	    }
 
@@ -242,7 +256,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            position: 'relative',
 	            height: '100%',
 	            width: '100%',
-	            overflowY : config.useNativeScroller ? 'scroll' : 'hidden'
+	            overflowY : config.useNativeScroller ? 'scroll' : 'hidden',
+	            "-webkit-overflow-scrolling": "touch"
 	        });
 	        rootElement.appendChild(scrollElement);
 	        parentElement.appendChild(
@@ -261,8 +276,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    topListItemIndex = 0;
 	                    rootElement.scrollTop = 0;
 	                    differenceFromTop = 0;
-	                } else if (config.itemsCount < initialPage.itemsCount) {
-	                    //numberOfRenderedItemsAhead = initialPage.itemsCount - config.itemsCount;
 	                }
 
 	                config.itemsCount = initialPage.itemsCount;
@@ -275,6 +288,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        parentElementHeight = parentElement.clientHeight;
+	        parentElementWidth = parentElement.clientWidth;
 
 	        itemsRenderer.refresh();
 	        calculateHeights();
@@ -282,7 +296,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            scrollbarRenderer.refresh();
 	        }
 
-	        if (initialPage) {
+	        if (initialPage && !config.useNativeScroller) {
 	            scrollToItem(topListItemIndex, false, differenceFromTop);
 	        }
 
@@ -324,7 +338,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!config.useNativeScroller) {
 	            StyleHelpers.applyTransformStyle(scrollElement, 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0' + ',' + (-topOffset) + ', 0, 1)');
 	        }
-	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, numberOfRenderedItemsAhead);
+	        needsRender = itemsRenderer.render(topOffset, scrollToIndex, topItemOffset, listItemsHeights);
 	        renderedItems = itemsRenderer.getRenderedItems();
 
 	        scrollToIndex = null;
@@ -367,19 +381,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }
 
-	    function loadMoreCallback(){
+	    function loadMoreCallback(onComplete){
 	        config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
 	            config.hasMore = hasMore;
 	            config.itemsCount += pageItemsCount;
-	            if (config.useNativeScroller) {
-	                //numberOfRenderedItemsAhead = pageItemsCount;
-	            }
 	            calculateHeights(config.itemsCount - pageItemsCount);
 	            scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems().length - 1].getItemOffset() - parentElementHeight);
 	            //scroller.scrollTo(itemsRenderer.getRenderedItems()[itemsRenderer.getRenderedItems()[0].getItemOffset()]);
 	            if (config.useNativeScroller) {
 
 	            }
+	            onComplete();
 	        });
 	    }
 
@@ -443,6 +455,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = InfiniteList;
+
 
 /***/ },
 /* 3 */
@@ -820,10 +833,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var visibleHeight = attachedElement.clientHeight,
 	        itemWidth = attachedElement.clientWidth,
 	        renderedListItems = [],
+	        loading = false,
 	        layersPool = new LayersPool();
 
-	    function render(topOffset, atIndex, offsetFromTop, minNumberOfItemsAhead){
-	        var startRenderTime = new Date().getTime();
+	    function render(topOffset, atIndex, offsetFromTop, listItemsHeights){
+	        var startRenderTime = new Date().getTime(),
+	            minNumberOfItemsAhead = 2;
 
 	        if ( typeof atIndex == 'number' &&  atIndex >= 0){
 	            atIndex = Math.max(0, Math.min(atIndex, listConfig.itemsCount-1));
@@ -837,8 +852,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        //clean top items
-	        while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() < topOffset) {
+	        while (renderedListItems.length > 1 && renderedListItems[0] && renderedListItems[0].getItemOffset() + renderedListItems[0].getItemHeight() < topOffset) {
 	            layersPool.addLayer(renderedListItems.shift());
+	        }
+
+	        if (renderedListItems.length == 1 && renderedListItems[0].getItemOffset() < topOffset ) {
+	            var currentOffset = renderedListItems[0].getItemOffset() + renderedListItems[0].getItemHeight(),
+	                itemIndex = renderedListItems[0].getItemIndex();
+	            while (currentOffset < topOffset) {
+	                ++itemIndex;
+	                currentOffset += listItemsHeights[itemIndex];
+	            }
+
+	            if (renderedListItems[0].getItemIndex() != itemIndex) {
+	                return render(currentOffset - listItemsHeights[itemIndex], itemIndex, 0, listItemsHeights);
+	            }
+	        } else if (renderedListItems[0].getItemOffset() > topOffset + visibleHeight ) {
+	            var itemIndex = 0,
+	                itemEndPosition = listItemsHeights[0];
+
+	            while (itemEndPosition < topOffset) {
+	                itemIndex++;
+	                itemEndPosition += listItemsHeights[itemIndex];
+	            }
+
+	            return render(itemEndPosition - listItemsHeights[itemIndex], itemIndex, 0, listItemsHeights);
 	        }
 
 	        //fill up
@@ -923,7 +961,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function renderAfter(listItem){
 	        var newItem = renderListItem(listItem.getItemIndex() + 1);
 	        if (newItem) {
-	            newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
+	            newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());            
 	            renderedListItems.push(newItem);
 	        }
 	        return newItem;
@@ -959,11 +997,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return layer;
 	    }
 
-	    function renderLoadMore(){
-	        if (renderedListItems.length == 0 || renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
+	    function renderLoadMore(){        
+	        if (renderedListItems.length == 0 || renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {            
 	            var loadMoreLayer = borrowLayerForIndex(listConfig.itemsCount, '$LoadMore');
 	            listConfig.loadMoreRenderer(listConfig.itemsCount, loadMoreLayer.getDomElement());
-	            pageCallback();
+	            if (!loading) {
+	                loading = true;
+	                pageCallback(function() {
+	                    loading = false;
+	                });
+	            }
 	            return loadMoreLayer;
 	        }
 

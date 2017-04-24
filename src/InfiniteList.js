@@ -256,7 +256,7 @@ var InfiniteList = function (listConfig) {
         }
     }
 
-    function loadMoreCallback(){
+    function loadMoreCallback(onComplete){
         config.pageFetcher(config.itemsCount, function(pageItemsCount, hasMore){
             config.hasMore = hasMore;
             config.itemsCount += pageItemsCount;
@@ -266,6 +266,7 @@ var InfiniteList = function (listConfig) {
             if (config.useNativeScroller) {
 
             }
+            onComplete();
         });
     }
 

@@ -9,6 +9,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
     var visibleHeight = attachedElement.clientHeight,
         itemWidth = attachedElement.clientWidth,
         renderedListItems = [],
+        loading = false,
         layersPool = new LayersPool();
 
     function render(topOffset, atIndex, offsetFromTop, listItemsHeights){
@@ -136,7 +137,7 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
     function renderAfter(listItem){
         var newItem = renderListItem(listItem.getItemIndex() + 1);
         if (newItem) {
-            newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());
+            newItem.setItemOffset(listItem.getItemOffset() + listItem.getItemHeight());            
             renderedListItems.push(newItem);
         }
         return newItem;
@@ -172,11 +173,16 @@ var ListItemsRenderer = function(attachedElement, scrollElement, listConfig, pag
         return layer;
     }
 
-    function renderLoadMore(){
-        if (renderedListItems.length == 0 || renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {
+    function renderLoadMore(){        
+        if (renderedListItems.length == 0 || renderedListItems[renderedListItems.length - 1].getIdentifier() != '$LoadMore') {            
             var loadMoreLayer = borrowLayerForIndex(listConfig.itemsCount, '$LoadMore');
             listConfig.loadMoreRenderer(listConfig.itemsCount, loadMoreLayer.getDomElement());
-            pageCallback();
+            if (!loading) {
+                loading = true;
+                pageCallback(function() {
+                    loading = false;
+                });
+            }
             return loadMoreLayer;
         }
 
