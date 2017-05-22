@@ -1,5 +1,5 @@
 var Layer = require('./Layer'),
-    LayersPool = require('./layerPool'),
+    LayersPool = require('./LayerPool'),
     StyleHelpers = require('./StyleHelpers'),
     AnimationFrameHelper = require('./AnimationFrameHelper'),
     MIN_FPS = 30,
